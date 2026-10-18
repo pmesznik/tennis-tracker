@@ -243,6 +243,7 @@
     <option value="#rywalizacje">Rywalizacje drużynowe</option>
     <option value="#backup">Kopia zapasowa</option>
     <option value="#wyglad">Wygląd i ikona</option>
+    <option value="#tablice">Style tablicy wyniku</option>
     <option value="#nawierzchnie">Nawierzchnie i motyw</option>
     <option value="#jezyki">Języki</option>
     <option value="#stos">Stos technologiczny</option>
@@ -264,6 +265,7 @@
     <a href="#rywalizacje">Rywalizacje drużynowe</a>
     <a href="#backup">Kopia zapasowa</a>
     <a href="#wyglad">Wygląd i ikona</a>
+    <a href="#tablice">Style tablicy wyniku</a>
     <a href="#nawierzchnie">Nawierzchnie i motyw</a>
     <a href="#jezyki">Języki</a>
     <a href="#stos">Stos technologiczny</a>
@@ -281,7 +283,7 @@
           <div class="tagline">Dokumentacja projektu</div>
         </div>
       </div>
-      <div class="version-pill"><span class="dot"></span>v0.11.0</div>
+      <div class="version-pill"><span class="dot"></span>v0.13.1</div>
     </header>
 
     <p class="lede">
@@ -386,7 +388,12 @@
         <div class="feature">
           <span class="fi">⋯</span>
           <h3>Chowane menu i przycisk wstecz</h3>
-          <p>Ikony kopii, rywalizacji, kolorystyki i języka chowają się w jednej ikonie. „Wstecz” w Androidzie zamyka nakładki i cofa ekrany.</p>
+          <p>Ikony kopii, rywalizacji, kolorystyki, stylu tablicy i języka chowają się w jednej ikonie. „Wstecz” w Androidzie zamyka nakładki i cofa ekrany.</p>
+        </div>
+        <div class="feature">
+          <span class="fi">🔢</span>
+          <h3>Osiem stylów tablicy wyniku</h3>
+          <p>Klapki, Tarcza, Piłka, Pierścień, Neon, Tablica kredowa, Wyświetlacz segmentowy i Matryca LED. Wybór w chowanym menu, każdy działa też w tie-breaku.</p>
         </div>
       </div>
     </section>
@@ -484,6 +491,14 @@
         <div class="flow-arrow">→</div>
         <div class="flow-box"><span class="k">03</span><span class="v">share-site/index.html</span><span class="d">GitHub Pages</span></div>
       </div>
+
+      <p>
+        Każdy z trzech linków niesie też wybraną kolorystykę nadawcy (<code>pal</code>: klasyczna lub nowoczesna),
+        więc strona odbiorcy rysuje tło, akcent i kafelki w tej samej palecie i nawierzchni, które widzi osoba
+        wprowadzająca wynik, z tą samą czcionką i ikoną aplikacji. Linki wysłane przed wprowadzeniem tej zmiany nie
+        mają pola <code>pal</code> i pokazują się w palecie klasycznej. Strona odbiorcy pokazuje licznik gema w
+        stylu Klapki niezależnie od stylu tablicy wybranego w aplikacji.
+      </p>
 
       <h3>Karta Pro — pełny raport dla trenera</h3>
       <p>
@@ -595,10 +610,43 @@
       <ul class="plain">
         <li><strong>Czcionka</strong> — systemowa (Roboto) w całej aplikacji; Barlow Condensed tylko na kafelkach wyniku i liczbach setów.</li>
         <li><strong>Okna</strong> — zamiast okienek na środku, dolne arkusze z uchwytem (kopia zapasowa, wybór poziomu śledzenia, kolorystyka).</li>
-        <li><strong>Chowane menu</strong> — ikona ⋯ w nagłówku rozwija chip (kopia zapasowa, rywalizacje, kolorystyka, język) w lewo i zwija go po wyborze, po dotknięciu poza nim i przyciskiem „wstecz”.</li>
+        <li><strong>Chowane menu</strong> — ikona ⋯ w nagłówku rozwija chip (kopia zapasowa, rywalizacje, kolorystyka, styl tablicy wyniku, język) w lewo i zwija go po wyborze, po dotknięciu poza nim i przyciskiem „wstecz”.</li>
         <li><strong>Przycisk „wstecz” Androida</strong> — <code>MainActivity.java</code> pyta aplikację (<code>window.appBack()</code>), a ta najpierw zamyka najwyższą nakładkę (<code>backStack.js</code>), potem cofa o jeden ekran; dopiero z listy meczów aplikacja się zamyka.</li>
         <li><strong>Ikona</strong> — piłka tenisowa podzielona szwem na dwie połowy: magenta (gracz 1) i kwasowa zieleń (gracz 2) na tle „Noc” <code>#0A0A12</code>. Adaptive icon z warstwą monochrome (ikony motywu Androida 13+), favicon, ikona w nagłówku apki i splash w kolorze ikony.</li>
         <li><strong>Pasek stanu i nawigacji</strong> — jasne ikony na ciemnym tle (<code>SystemBars</code>, styl <code>DARK</code>).</li>
+      </ul>
+    </section>
+
+    <section id="tablice">
+      <div class="eyebrow">Tablica wyniku</div>
+      <h2>Osiem stylów licznika gema</h2>
+      <p>
+        Licznik punktów w gemie (<code>0 · 15 · 30 · 40 · Ad</code>, a w tie-breaku liczby) można wyświetlać w ośmiu
+        stylach. Wybór jest w chowanym menu (ikona zegara): dolny arkusz z miniaturami 15 : 30, zapamiętany w
+        <code>localStorage</code> (<code>atz_score_style</code>, domyślnie Klapki). Wszystkie style rysuje ten sam
+        komponent <code>ScoreBoard</code> (<code>src/matchtracker/scoreboard.jsx</code>) z identycznym wejściem:
+        etykiety punktów obu stron, kto serwuje, czy to tie-break, czy właśnie skończył się gem. Liczenie punktów
+        zostaje w <code>scoringEngine.js</code> — tablica tylko wyświetla, a punkty nadal wpisuje się dużymi
+        przyciskami pod nią.
+      </p>
+      <div class="tw"><table>
+        <tr><th>Styl</th><th>Wygląd</th><th>W tie-breaku</th></tr>
+        <tr><td>Klapki</td><td>domyślny: ciemne kafelki z „przewracaniem”</td><td>liczby</td></tr>
+        <tr><td>Tarcza</td><td>zegar: wskazówka na 0 (12), 15 (3), 30 (6), 40 (9), Ad (między 9 a 12)</td><td>skala 0/3/6/9, 30° na punkt, 12 punktów to obrót</td></tr>
+        <tr><td>Piłka</td><td>liczba w piłce ze szwem, obrót przy zmianie</td><td>liczby</td></tr>
+        <tr><td>Pierścień</td><td>4 segmenty zapełniają się kolejno</td><td>tyle segmentów, do ilu punktów gra się tie-break (7 lub 10), pełny po przekroczeniu</td></tr>
+        <tr><td>Neon</td><td>świecący okrąg i liczba, migotanie przy zmianie</td><td>liczby</td></tr>
+        <tr><td>Tablica kredowa</td><td>zielona tablica w drewnianej ramce, kreski liczące punkty</td><td>liczby, bez kresek</td></tr>
+        <tr><td>Wyświetlacz segmentowy</td><td>cyfry siedmiosegmentowe, błysk przy zmianie</td><td>do 3 cyfr</td></tr>
+        <tr><td>Matryca LED</td><td>cyfry z okrągłych diod, zapalanie wierszami</td><td>do 3 cyfr (mniejsze diody)</td></tr>
+      </table></div>
+      <ul class="plain">
+        <li><strong>Kolory</strong> biorą się z aktualnej palety i nawierzchni: akcent steruje wskazówką tarczy, wypełnieniem pierścienia, poświatą neonu, segmentami i diodami. Piłka zostaje żółto-zielona, cyferblat kremowy, tablica kredowa zielona.</li>
+        <li><strong>Czcionka</strong> wszystkich cyfr to Barlow Condensed, jak reszta liczników apki.</li>
+        <li><strong>Rozmiary</strong> są zmniejszone (<code>zoom</code> 68–80%), żeby dwie tablice i duże przyciski punktów mieściły się na ekranie telefonu; miniatury w menu są jeszcze mniejsze.</li>
+        <li><strong>Serwis</strong> pokazuje ta sama skacząca piłeczka po zewnętrznej stronie pola, w każdym stylu.</li>
+        <li><strong>Status</strong> RÓWNOWAGA / PRZEWAGA / TIE-BREAK pojawia się pod tablicą (PL/EN).</li>
+        <li><strong>Ruch</strong> jest wyłączany przez <code>prefers-reduced-motion</code>.</li>
       </ul>
     </section>
 
@@ -682,6 +730,7 @@ translate("en", "tracker.pointFor", { name: "Novak" })
 <span class="tree-c">   ├─</span> scoringEngine.js  <span class="tree-comment">// computeScore(), presety reguł</span>
 <span class="tree-c">   ├─</span> time.js           <span class="tree-comment">// formatDuration, czas punktów/setów</span>
 <span class="tree-c">   ├─</span> stats.js          <span class="tree-comment">// statystyki punktowe (asy, winnery…)</span>
+<span class="tree-c">   ├─</span> scoreboard.jsx    <span class="tree-comment">// 8 stylów tablicy wyniku (ScoreBoard)</span>
 <span class="tree-c">   ├─</span> players.js        <span class="tree-comment">// indeks zawodników, ulubieni, podpowiedzi</span>
 <span class="tree-c">   ├─</span> storage.js        <span class="tree-comment">// CRUD na meczach w localStorage</span>
 <span class="tree-c">   ├─</span> backup.js         <span class="tree-comment">// eksport/import historii do pliku</span>
@@ -738,7 +787,7 @@ npx cap sync android</code></pre>
 
     <footer>
       <span>Tennis Tracker — dokumentacja wewnętrzna projektu.</span>
-      <span>Wygenerowano dla wersji <span class="mono">v0.11.0</span></span>
+      <span>Wygenerowano dla wersji <span class="mono">v0.13.1</span></span>
     </footer>
   </main>
 </div>
