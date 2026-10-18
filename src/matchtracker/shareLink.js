@@ -10,6 +10,7 @@
 import { computeScore } from "./scoringEngine.js";
 import { computeStats } from "./stats.js";
 import { longestPoint, averagePointDurationMs } from "./time.js";
+import { getStoredPalette } from "../theme.js";
 
 export const SHARE_BASE_URL = "https://pmesznik.github.io/tennis-tracker";
 
@@ -43,6 +44,7 @@ export function buildShareUrl(match, setsRow) {
     sf: match.surface || null,
     d: match.date || null,
     w: deriveWinner(match),
+    pal: getStoredPalette() || "classic",
   };
   return `${SHARE_BASE_URL}/?d=${toBase64Url(JSON.stringify(payload))}`;
 }
@@ -65,6 +67,7 @@ export function buildProShareUrl(match, setsRow) {
     sf: match.surface || null,
     d: match.date || null,
     w: deriveWinner(match),
+    pal: getStoredPalette() || "classic",
     md: hasTiming ? (match.endedAt ?? Date.now()) - match.startedAt : null,
     sd: score ? score.sets.map((s) => s.durationMs) : null,
     apm: hasTiming ? averagePointDurationMs(match.pointLog, match.startedAt) : null,

@@ -7,6 +7,7 @@ import * as storage from "./storage.js";
 import { computeScore, formatSetsString, buildSetRow, teamLabel, otherTeam, currentServerPlayerName, TEAM1, TEAM2 } from "./scoringEngine.js";
 import { shareMatch, buildLiveShareUrl } from "./shareLink.js";
 import { publishLiveScore } from "./liveSync.js";
+import { getStoredPalette } from "../theme.js";
 
 const INITIAL_STAGE = { name: "serve1", rallyCount: 0, shotType: "forehand", atNet: false, serveUsed: "1st" };
 
@@ -23,6 +24,7 @@ function buildLivePayload(match, score) {
     matchWinner: score.matchWinner,
     sf: match.surface || null,
     d: match.date || null,
+    pal: getStoredPalette() || "classic",
   };
 }
 

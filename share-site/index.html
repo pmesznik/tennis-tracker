@@ -10,32 +10,34 @@
 <meta property="og:title" content="Tennis Tracker — wynik meczu" />
 <meta property="og:description" content="Zobacz wynik meczu zapisany w aplikacji Tennis Tracker." />
 <meta property="og:type" content="website" />
-<meta name="theme-color" content="#111144" />
+<meta name="theme-color" content="#0A0A12" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#111144; --bg2:#223382; --accent:#f98513; --accent2:#ffab4d;
-    --text:#f4f1ec; --text-sub:rgba(244,241,236,0.65); --text-muted:rgba(244,241,236,0.4);
+    --bgcolor:#111144;
+    --bggrad:linear-gradient(165deg, #0c0c33 0%, #111144 38%, #1b2456 72%, #223382 100%);
+    --accent:#f98513; --accent2:#ffab4d; --on:#0a0a12;
+    --text:#f4f1ec; --text-sub:rgba(244,241,236,0.62); --text-muted:rgba(244,241,236,0.38);
     --surface:rgba(155,172,216,0.08); --border:rgba(155,172,216,0.20);
+    --score:'Barlow Condensed','Roboto Condensed',Roboto,sans-serif;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    min-height:100vh; min-height:100dvh; font-family:'Barlow Condensed','Oswald',-apple-system,'Segoe UI',sans-serif;
-    color:var(--text);
-    background:
-      radial-gradient(circle at 12% -10%, rgba(155,172,216,0.22) 0%, transparent 42%),
-      radial-gradient(circle at 100% 105%, rgba(249,133,19,0.16) 0%, transparent 46%),
-      linear-gradient(165deg, #0c0c33 0%, #111144 38%, #1b2456 72%, var(--bg2) 100%);
-    background-attachment:fixed;
+    min-height:100vh; min-height:100dvh; font-family:system-ui,Roboto,'Segoe UI',sans-serif;
+    color:var(--text); font-size:15px; line-height:1.4;
+    background-color:var(--bgcolor); background-image:var(--bggrad);
+    background-attachment:fixed; background-size:cover;
     display:flex; align-items:center; justify-content:center;
     padding:24px calc(16px + env(safe-area-inset-right,0px)) 24px calc(16px + env(safe-area-inset-left,0px));
   }
   .card{
     width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border);
-    border-radius:18px; padding:28px 22px; text-align:center; backdrop-filter:blur(10px);
+    border-radius:28px; padding:28px 22px; text-align:center; backdrop-filter:blur(10px); box-shadow:0 6px 24px rgba(0,0,0,0.35);
   }
   .brand{
-    font-size:12px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase;
+    font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
     color:var(--text-muted); margin-bottom:18px; display:flex; align-items:center; justify-content:center; gap:6px;
   }
   .live-badge{
@@ -47,16 +49,16 @@
   @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.55;} }
   .pro-badge{
     display:inline-block; font-size:10px; font-weight:800; letter-spacing:0.12em;
-    color:#171b38; background:var(--accent); padding:3px 10px; border-radius:10px; margin-bottom:14px;
+    color:var(--on); background:var(--accent); padding:4px 12px; border-radius:999px; margin-bottom:14px;
   }
-  .players{ font-size:21px; font-weight:800; line-height:1.5; }
+  .players{ font-size:21px; font-weight:700; line-height:1.5; }
   .name-ball{ display:inline-flex; vertical-align:middle; margin-left:6px; }
   .vs{ font-size:12px; color:var(--text-muted); font-weight:700; letter-spacing:0.08em; margin:2px 0; }
   .winner{ color:var(--accent); }
   .winner .trophy{ margin-right:4px; }
   .sets{
     display:flex; justify-content:center; gap:14px; flex-wrap:wrap;
-    font-size:26px; font-weight:800; color:var(--accent); margin:18px 0 6px;
+    font-family:var(--score); font-size:30px; font-weight:700; color:var(--accent); margin:18px 0 6px;
   }
   .game{ display:flex; align-items:center; justify-content:center; gap:10px; margin:22px 0 16px; }
   .game .colon{ color:var(--text-muted); font-size:22px; font-weight:800; }
@@ -70,7 +72,7 @@
   }
   .score-tile::before{ content:""; position:absolute; top:50%; left:0; right:0; height:2px; background:rgba(0,0,0,0.45); z-index:2; }
   .score-tile::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(255,255,255,0.06), transparent 55%); }
-  .score-tile span{ position:relative; z-index:1; color:var(--accent); font-weight:800; font-size:30px; line-height:1; font-family:'Barlow Condensed','Oswald',sans-serif; text-shadow:0 1px 2px rgba(0,0,0,0.5); }
+  .score-tile span{ position:relative; z-index:1; color:var(--accent); font-weight:800; font-size:32px; line-height:1; font-family:var(--score); text-shadow:0 1px 2px rgba(0,0,0,0.5); }
   .serve-ball{
     position:absolute; top:50%; width:16px; height:16px; z-index:3; pointer-events:none;
     animation: ballBounce 0.9s ease-in-out infinite;
@@ -104,14 +106,13 @@
 </head>
 <body>
 <div class="card" id="card">
-  <div class="brand">🎾 Tennis Tracker</div>
+  <div class="brand"><img src="favicon.svg" width="20" height="20" alt="" style="border-radius:6px"> Tennis Tracker</div>
   <div id="content"><div class="error">Wczytywanie…</div></div>
 </div>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
   import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
-  const SURFACE_COLORS = { "Ziemna": "#e8813f", "Twarda": "#38bdf8", "Trawa": "#4ade80" };
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyDgjd3EhID7KR-krrNNXx3Uv5yny9LkCsE",
     authDomain: "tenis-tracker-live.firebaseapp.com",
@@ -129,6 +130,49 @@
     ["unforcedErrors", "Niewymuszone błędy"],
     ["netPoints", "Punkty przy siatce"],
   ];
+
+
+  // Te same palety co w aplikacji (src/theme.js): klasyczna i nowoczesna, każda
+  // z wariantem nawierzchni. Wybór nadawcy przychodzi w linku jako pal.
+  function modernPal(o) {
+    return {
+      bg: o.bg,
+      grad: "radial-gradient(120% 60% at 0% 0%, rgba(" + o.glow + ",0.26) 0%, transparent 55%), radial-gradient(90% 50% at 100% 100%, rgba(" + o.glow2 + ",0.10) 0%, transparent 60%)",
+      text: o.text, sub: "rgba(" + o.textRgb + ",0.68)", muted: "rgba(" + o.textRgb + ",0.42)",
+      surface: "rgba(" + o.tint + ",0.07)", border: "rgba(" + o.tint + ",0.14)",
+      accent: o.accent, accent2: o.accent2, on: "#0A0A12",
+    };
+  }
+  const PALETTES = {
+    classic: {
+      neutral: { bg: "#111144", grad: "radial-gradient(circle at 12% -10%, rgba(155,172,216,0.22) 0%, transparent 42%), radial-gradient(circle at 100% 105%, rgba(249,133,19,0.16) 0%, transparent 46%), linear-gradient(165deg, #0c0c33 0%, #111144 38%, #1b2456 72%, #223382 100%)", text: "#F4F1EC", sub: "rgba(244,241,236,0.62)", muted: "rgba(244,241,236,0.38)", surface: "rgba(155,172,216,0.08)", border: "rgba(155,172,216,0.20)", accent: "#F98513", accent2: "#ffab4d", on: "#0A0A12" },
+      Ziemna: { bg: "#241812", grad: "radial-gradient(circle at 12% -10%, rgba(224,196,168,0.14) 0%, transparent 42%), radial-gradient(circle at 100% 105%, rgba(165,97,63,0.20) 0%, transparent 48%), linear-gradient(165deg, #201510 0%, #33231a 35%, #533626 72%, #714632 100%)", text: "#F4F1EC", sub: "rgba(255,241,230,0.62)", muted: "rgba(255,241,230,0.38)", surface: "rgba(224,196,168,0.08)", border: "rgba(224,196,168,0.18)", accent: "#e8813f", accent2: "#f5b877", on: "#0A0A12" },
+      Twarda: { bg: "#071b33", grad: "radial-gradient(circle at 12% -10%, rgba(125,211,252,0.22) 0%, transparent 42%), radial-gradient(circle at 100% 105%, rgba(56,189,248,0.20) 0%, transparent 48%), linear-gradient(165deg, #050f24 0%, #0d1f45 35%, #1a3a75 72%, #2456a8 100%)", text: "#F4F1EC", sub: "rgba(230,244,255,0.65)", muted: "rgba(230,244,255,0.4)", surface: "rgba(155,172,216,0.09)", border: "rgba(125,211,252,0.22)", accent: "#38bdf8", accent2: "#7dd3fc", on: "#0A0A12" },
+      Trawa: { bg: "#06210f", grad: "radial-gradient(circle at 12% -10%, rgba(190,242,100,0.20) 0%, transparent 42%), radial-gradient(circle at 100% 105%, rgba(34,139,34,0.26) 0%, transparent 48%), linear-gradient(165deg, #04170c 0%, #0c2a17 35%, #1f5030 72%, #2f7d4f 100%)", text: "#F4F1EC", sub: "rgba(235,255,235,0.65)", muted: "rgba(235,255,235,0.4)", surface: "rgba(190,242,100,0.08)", border: "rgba(190,242,100,0.20)", accent: "#4ade80", accent2: "#bef264", on: "#0A0A12" },
+    },
+    modern: {
+      neutral: modernPal({ bg: "#0A0A12", accent: "#FF3D81", accent2: "#C6FF00", glow: "255,31,107", glow2: "198,255,0", tint: "255,255,255", text: "#F4F4FA", textRgb: "244,244,250" }),
+      Ziemna: modernPal({ bg: "#120B09", accent: "#FF7A3D", accent2: "#FFB58A", glow: "255,107,53", glow2: "255,180,138", tint: "255,170,120", text: "#FFF3EC", textRgb: "255,243,236" }),
+      Twarda: modernPal({ bg: "#070E1A", accent: "#3FB6FF", accent2: "#8FE0FF", glow: "40,170,255", glow2: "120,220,255", tint: "120,200,255", text: "#EEF7FF", textRgb: "238,247,255" }),
+      Trawa: modernPal({ bg: "#06100A", accent: "#4DE58A", accent2: "#B6FF7A", glow: "70,230,120", glow2: "190,255,110", tint: "130,245,175", text: "#EFFFF4", textRgb: "239,255,244" }),
+    },
+  };
+
+  function applyTheme(pal, surface) {
+    const set = PALETTES[pal] || PALETTES.classic;
+    const th = set[surface] || set.neutral;
+    const st = document.documentElement.style;
+    st.setProperty("--bgcolor", th.bg);
+    st.setProperty("--bggrad", th.grad);
+    st.setProperty("--text", th.text);
+    st.setProperty("--text-sub", th.sub);
+    st.setProperty("--text-muted", th.muted);
+    st.setProperty("--surface", th.surface);
+    st.setProperty("--border", th.border);
+    st.setProperty("--accent", th.accent);
+    st.setProperty("--accent2", th.accent2);
+    st.setProperty("--on", th.on);
+  }
 
   function fromBase64Url(b64url) {
     let b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
@@ -164,6 +208,7 @@
     opts = opts || {};
     const content = document.getElementById("content");
     if (!data) {
+      applyTheme("classic", null);
       content.innerHTML = '<div class="error">' +
         (opts.live ? "Ten mecz nie jest teraz udostępniany na żywo." : "Nieprawidłowy link do wyniku.") +
         "</div>";
@@ -174,7 +219,7 @@
     const t2 = (data.t2 || []).filter(Boolean).join(" / ") || "Gracz 2";
     const sets = Array.isArray(data.sets) ? data.sets : Array.isArray(data.s) ? data.s : [];
     const surface = data.sf || null;
-    document.documentElement.style.setProperty("--accent", SURFACE_COLORS[surface] || "#f98513");
+    applyTheme(data.pal, surface);
 
     const winner = data.w || data.matchWinner || null;
     const p1Class = winner === "team1" ? "winner" : "";
@@ -196,7 +241,7 @@
     }
 
     const metaParts = [];
-    if (data.d) metaParts.push("📅 " + esc(data.d));
+    if (data.d) metaParts.push('<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:5px"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg>' + esc(data.d));
     if (surface) metaParts.push('<span class="dot"></span>' + esc(surface));
 
     content.innerHTML =
@@ -215,6 +260,7 @@
   function renderProMatch(data) {
     const content = document.getElementById("content");
     if (!data) {
+      applyTheme("classic", null);
       content.innerHTML = '<div class="error">Nieprawidłowy link do karty.</div>';
       return;
     }
@@ -223,7 +269,7 @@
     const t2 = (data.t2 || []).filter(Boolean).join(" / ") || "Gracz 2";
     const sets = Array.isArray(data.s) ? data.s : [];
     const surface = data.sf || null;
-    document.documentElement.style.setProperty("--accent", SURFACE_COLORS[surface] || "#f98513");
+    applyTheme(data.pal, surface);
 
     const winner = data.w || null;
     const p1Class = winner === "team1" ? "winner" : "";
@@ -232,7 +278,7 @@
     const trophy2 = winner === "team2" ? '<span class="trophy">🏆</span>' : "";
 
     const metaParts = [];
-    if (data.d) metaParts.push("📅 " + esc(data.d));
+    if (data.d) metaParts.push('<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:5px"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg>' + esc(data.d));
     if (surface) metaParts.push('<span class="dot"></span>' + esc(surface));
 
     let timeHtml = "";
