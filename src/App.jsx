@@ -258,6 +258,10 @@ export default function App() {
           50% { opacity: 0.4; transform: scale(0.8); }
         }
         @keyframes sbSpin { 0% { transform: rotate(-220deg) scale(.82); } 70% { transform: rotate(10deg) scale(1.05); } 100% { transform: rotate(0) scale(1); } }
+        @keyframes sbFlicker { 0% { opacity: .1; } 10% { opacity: 1; } 18% { opacity: .25; } 28% { opacity: 1; } 36% { opacity: .5; } 46% { opacity: 1; } 100% { opacity: 1; } }
+        @keyframes sbWrite { 0% { clip-path: inset(0 100% 0 0); } 100% { clip-path: inset(0 0 0 0); } }
+        @keyframes sbHit { 0% { filter: brightness(1.8); } 100% { filter: brightness(1); } }
+        @keyframes sbScan { 0% { clip-path: inset(0 0 100% 0); } 100% { clip-path: inset(0 0 0 0); } }
         @keyframes sbPop { 0% { transform: scale(.5); opacity: .2; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
         @keyframes ballBounce {
           0%, 100% { transform: translateY(-50%); }
