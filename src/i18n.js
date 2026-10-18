@@ -167,6 +167,14 @@ const dict = {
     "tie.playerFor": "Zawodnik/zawodniczka — {team}",
     "tie.confirmDelete": "Usunąć tę rywalizację? (mecze pozostaną w historii)",
     "tie.notFound": "Rywalizacja nie znaleziona",
+
+    "palette.title": "Wybierz kolorystykę",
+    "palette.hint": "Kolor aplikacji nadal zależy od nawierzchni meczu. Zmienisz to później w menu.",
+    "palette.classic": "Klasyczna",
+    "palette.modern": "Nowoczesna",
+    "palette.iconTitle": "Kolorystyka",
+    "menu.open": "Menu",
+    "menu.close": "Zwiń menu",
   },
   en: {
     "common.back": "Back",
@@ -323,6 +331,14 @@ const dict = {
     "tie.playerFor": "Player — {team}",
     "tie.confirmDelete": "Delete this tie? (matches stay in history)",
     "tie.notFound": "Tie not found",
+
+    "palette.title": "Choose a color scheme",
+    "palette.hint": "The app color still depends on the match surface. You can change this later in the menu.",
+    "palette.classic": "Classic",
+    "palette.modern": "Modern",
+    "palette.iconTitle": "Color scheme",
+    "menu.open": "Menu",
+    "menu.close": "Collapse menu",
   },
 };
 

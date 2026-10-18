@@ -126,6 +126,42 @@ const GRASS = {
   overlay: "rgba(2,12,7,0.7)",
 };
 
+
+// ─── NOWOCZESNA PALETA (opcjonalna, wybór przy pierwszym uruchomieniu) ───────
+// Ta sama zasada co klasyczna (kolor wg nawierzchni), ale prawie czarne tła z
+// kolorową poświatą w rogu, jeden żywy akcent na nawierzchnię i jasny tekst.
+function modernTheme(key, o) {
+  return {
+    key, accent: o.accent, accent2: o.accent2,
+    secondary: o.secondary, secondarySoft: o.accent2,
+    danger: DANGER, success: SUCCESS,
+    bg: o.bg,
+    bgGradient: `
+      radial-gradient(120% 60% at 0% 0%, rgba(${o.glow},0.26) 0%, transparent 55%),
+      radial-gradient(90% 50% at 100% 100%, rgba(${o.glow2},0.10) 0%, transparent 60%),
+      linear-gradient(180deg, ${o.bg} 0%, ${o.bg} 100%)
+    `,
+    navBg: `rgba(${o.navRgb},0.82)`,
+    surface: `rgba(${o.tint},0.07)`,
+    surfaceElevated: `rgba(${o.tint},0.13)`,
+    border: `rgba(${o.tint},0.14)`,
+    borderStrong: `rgba(${o.tint},0.26)`,
+    text: o.text,
+    textSub: `rgba(${o.textRgb},0.68)`,
+    textMuted: `rgba(${o.textRgb},0.42)`,
+    inputBg: `rgba(${o.tint},0.09)`,
+    cardShadow: "none",
+    scrollbar: `rgba(${o.tint},0.3)`,
+    overlay: "rgba(3,3,8,0.72)",
+    bigA: { bg: o.accent, fg: "#0A0A12" },
+    bigB: { bg: o.bigB, fg: o.text },
+  };
+}
+const M_NEUTRAL = modernTheme("neutral", { bg: "#0A0A12", accent: "#FF3D81", accent2: "#C6FF00", secondary: "#8f1747", glow: "255,31,107", glow2: "198,255,0", navRgb: "10,10,18", tint: "255,255,255", text: "#F4F4FA", textRgb: "244,244,250", bigB: "#26212e" });
+const M_CLAY = modernTheme("clay", { bg: "#120B09", accent: "#FF7A3D", accent2: "#FFB58A", secondary: "#9a4420", glow: "255,107,53", glow2: "255,180,138", navRgb: "18,11,9", tint: "255,170,120", text: "#FFF3EC", textRgb: "255,243,236", bigB: "#2c1a13" });
+const M_HARD = modernTheme("hard", { bg: "#070E1A", accent: "#3FB6FF", accent2: "#8FE0FF", secondary: "#16608f", glow: "40,170,255", glow2: "120,220,255", navRgb: "7,14,26", tint: "120,200,255", text: "#EEF7FF", textRgb: "238,247,255", bigB: "#12243a" });
+const M_GRASS = modernTheme("grass", { bg: "#06100A", accent: "#4DE58A", accent2: "#B6FF7A", secondary: "#1f7a44", glow: "70,230,120", glow2: "190,255,110", navRgb: "6,16,10", tint: "130,245,175", text: "#EFFFF4", textRgb: "239,255,244", bigB: "#10261a" });
+
 const THEME_BY_SURFACE = { Ziemna: CLAY, Twarda: HARD, Trawa: GRASS };
 
 // Tokeny z STANDARD_DESIGNU (zaokrąglenia, odstępy, dotyk, ruch) wspólne dla
@@ -136,6 +172,8 @@ const FONT_SCORE = "'Barlow Condensed', 'Roboto Condensed', Roboto, sans-serif";
 function withTokens(theme) {
   return {
     ...theme,
+    bigA: theme.bigA || { bg: theme.secondary, fg: "#fff" },
+    bigB: theme.bigB || { bg: theme.secondarySoft, fg: "#fff" },
     rLg: 28, rCard: 20, rMd: 16, rSm: 12,
     sp1: 4, sp2: 8, sp3: 12, sp4: 16, sp5: 24,
     touch: 46,
@@ -150,14 +188,36 @@ function withTokens(theme) {
   };
 }
 const TOKENIZED = {
-  neutral: withTokens(NEUTRAL), clay: withTokens(CLAY), hard: withTokens(HARD), grass: withTokens(GRASS),
+  classic: {
+    neutral: withTokens(NEUTRAL), clay: withTokens(CLAY), hard: withTokens(HARD), grass: withTokens(GRASS),
+  },
+  modern: {
+    neutral: withTokens(M_NEUTRAL), clay: withTokens(M_CLAY), hard: withTokens(M_HARD), grass: withTokens(M_GRASS),
+  },
 };
-const TOKEN_BY_SURFACE = { Ziemna: TOKENIZED.clay, Twarda: TOKENIZED.hard, Trawa: TOKENIZED.grass };
+const SURFACE_KEY = { Ziemna: "clay", Twarda: "hard", Trawa: "grass" };
+
+export const PALETTE_KEY = "atz_palette";
+export const PALETTES = ["classic", "modern"];
+export function getStoredPalette() {
+  try {
+    const v = localStorage.getItem(PALETTE_KEY);
+    return PALETTES.includes(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+export function setStoredPalette(p) {
+  try {
+    localStorage.setItem(PALETTE_KEY, p);
+  } catch {}
+}
 
 // surface: nazwa nawierzchni ("Ziemna"/"Twarda"/"Trawa") albo null/undefined
 // (brak kontekstu meczu → neutralny granat).
-export function themeForSurface(surface) {
-  return TOKEN_BY_SURFACE[surface] || TOKENIZED.neutral;
+export function themeForSurface(surface, palette = "classic") {
+  const set = TOKENIZED[palette] || TOKENIZED.classic;
+  return set[SURFACE_KEY[surface] || "neutral"];
 }
 
 export function surfaceDotColor(surface) {

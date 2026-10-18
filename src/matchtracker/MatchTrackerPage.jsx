@@ -149,7 +149,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
             <div style={{ flex: 1, display: "flex", gap: 2 }}>
               {(match.team1.names || []).map((nm) => (
                 <button key={nm} onClick={() => handleSelectServer(TEAM1, nm)} style={{
-                  flex: 1, background: t.secondary, color: "#fff", border: "none",
+                  flex: 1, background: t.bigA.bg, color: t.bigA.fg, border: "none",
                   fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
                 }}>{nm}<br /><span style={{ fontSize: 11, fontWeight: 500 }}>{tr("tracker.serves")}</span></button>
               ))}
@@ -157,7 +157,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
             <div style={{ flex: 1, display: "flex", gap: 2 }}>
               {(match.team2.names || []).map((nm) => (
                 <button key={nm} onClick={() => handleSelectServer(TEAM2, nm)} style={{
-                  flex: 1, background: t.secondarySoft, color: "#111144", border: "none",
+                  flex: 1, background: t.bigB.bg, color: t.bigB.fg, border: "none",
                   fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
                 }}>{nm}<br /><span style={{ fontSize: 11, fontWeight: 500 }}>{tr("tracker.serves")}</span></button>
               ))}
@@ -166,11 +166,11 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         ) : (
           <div style={{ flex: 1, display: "flex", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
             <button onClick={() => handleSelectServer(TEAM1)} style={{
-              flex: 1, background: t.secondary, color: "#fff", border: "none",
+              flex: 1, background: t.bigA.bg, color: t.bigA.fg, border: "none",
               fontSize: 18, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
             }}>{name1}<br /><span style={{ fontSize: 12, fontWeight: 500 }}>{tr("tracker.serves")}</span></button>
             <button onClick={() => handleSelectServer(TEAM2)} style={{
-              flex: 1, background: t.secondarySoft, color: "#111144", border: "none",
+              flex: 1, background: t.bigB.bg, color: t.bigB.fg, border: "none",
               fontSize: 18, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
             }}>{name2}<br /><span style={{ fontSize: 12, fontWeight: 500 }}>{tr("tracker.serves")}</span></button>
           </div>
@@ -201,7 +201,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <div style={{ flex: 1, display: "flex", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
           {names.map((nm, i) => (
             <button key={nm} onClick={() => handlePickOtherTeamServer(team, nm)} style={{
-              flex: 1, background: i === 0 ? t.secondary : t.secondarySoft, color: i === 0 ? "#fff" : "#111144", border: "none",
+              flex: 1, background: i === 0 ? t.bigA.bg : t.bigB.bg, color: i === 0 ? t.bigA.fg : t.bigB.fg, border: "none",
               fontSize: 18, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
             }}>{nm}<br /><span style={{ fontSize: 12, fontWeight: 500 }}>{tr("tracker.serves")}</span></button>
           ))}
@@ -328,8 +328,8 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         {Header}
         {TopRow}
         <div style={{ flex: 1, minHeight: 0, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "row", gap: 12 }}>
-          <BigButton label={tr("tracker.pointFor", { name: name1 })} color={t.secondary} onClick={() => commitPoint(TEAM1)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
-          <BigButton label={tr("tracker.pointFor", { name: name2 })} color={t.secondarySoft} onClick={() => commitPoint(TEAM2)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
+          <BigButton label={tr("tracker.pointFor", { name: name1 })} color={t.bigA.bg} textColor={t.bigA.fg} onClick={() => commitPoint(TEAM1)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
+          <BigButton label={tr("tracker.pointFor", { name: name2 })} color={t.bigB.bg} textColor={t.bigB.fg} onClick={() => commitPoint(TEAM2)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
         </div>
       </FullScreen>
     );

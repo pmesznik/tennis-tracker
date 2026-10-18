@@ -31,9 +31,9 @@ function TabBtn({ active, onClick, children }) {
 // Kafelek wyboru nawierzchni — kolorowany wg własnego motywu (nie bieżącego
 // t), żeby od razu podpowiadał, na jaki kolor przebarwi się cała apka.
 function SurfaceTile({ surface, active, onClick }) {
-  const { t } = useThemeCtx();
+  const { t, palette } = useThemeCtx();
   const { lang } = useLang();
-  const stheme = themeForSurface(surface);
+  const stheme = themeForSurface(surface, palette);
   return (
     <button onClick={onClick} style={{
       flex: 1, padding: "16px 6px", borderRadius: t.rMd, cursor: "pointer", fontFamily: "inherit", minHeight: 76,
@@ -147,7 +147,7 @@ function DepthPickerModal({ onPick, onClose }) {
 }
 
 export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceChange, tieContext }) {
-  const { t, styles } = useThemeCtx();
+  const { t, styles, palette } = useThemeCtx();
   const { lang, t: tr } = useLang();
   const isManual = mode === "manual";
   const [tab, setTab] = useState("players");
@@ -246,7 +246,7 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
       }}>
         <span style={{
           width: 10, height: 10, borderRadius: "50%",
-          background: surface ? themeForSurface(surface).accent : t.textMuted,
+          background: surface ? themeForSurface(surface, palette).accent : t.textMuted,
           flexShrink: 0,
         }} />
         {surface ? tr("setup.surfaceLabel", { surface: surfaceLabel(lang, surface) }) : tr("setup.surfaceNotChosen")}
