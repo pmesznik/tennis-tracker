@@ -14,6 +14,7 @@ import TeamTieDetailPage from "./matchtracker/TeamTieDetailPage.jsx";
 import { getTeamTie } from "./matchtracker/teamTies.js";
 import { Icon } from "./matchtracker/ui.jsx";
 import { pushBack, popBack } from "./backStack.js";
+import ScoreBoard, { SCORE_STYLES, getStoredScoreStyle, setStoredScoreStyle } from "./matchtracker/scoreboard.jsx";
 import appIcon from "./assets/app-icon.svg";
 
 // Ekran przy pierwszym uruchomieniu — wybór języka jest jawny (nie zgadujemy
@@ -99,6 +100,44 @@ function PaletteSheet({ t, tr, current, onPick, onClose }) {
   );
 }
 
+// Wybór stylu tablicy wyniku (z menu): dolny arkusz z miniaturami 15 : 30.
+function ScoreStyleSheet({ t, tr, current, onPick, onClose }) {
+  useEffect(() => pushBack(onClose), []);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 400, background: t.overlay, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
+      <div role="dialog" aria-label={tr("scoreStyle.title")} style={{
+        background: t.bg, border: `1px solid ${t.glassLine}`, borderRadius: `${t.rLg}px ${t.rLg}px 0 0`,
+        maxWidth: 480, width: "100%", maxHeight: "88vh", overflowY: "auto",
+        padding: "10px 16px calc(20px + env(safe-area-inset-bottom, 0px))", boxShadow: t.elevFloat,
+      }} onClick={(e) => e.stopPropagation()}>
+        <div aria-hidden="true" style={{ width: 42, height: 5, borderRadius: 3, background: t.borderStrong, margin: "0 auto 14px" }} />
+        <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 6 }}>{tr("scoreStyle.title")}</div>
+        <div style={{ fontSize: 13.5, color: t.textSub, margin: "0 0 14px", lineHeight: 1.45 }}>{tr("scoreStyle.hint")}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {SCORE_STYLES.map((k) => {
+            const active = current === k;
+            return (
+              <button key={k} onClick={() => onPick(k)} aria-pressed={active} aria-label={tr("scoreStyle." + k)} style={{
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", gap: 8,
+                minHeight: 112, padding: "12px 8px 10px", borderRadius: t.rCard, cursor: "pointer", fontFamily: "inherit",
+                background: active ? t.tonal : t.surface, color: t.text,
+                border: `2px solid ${active ? t.accent : t.glassLine}`,
+              }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+                  <ScoreBoard style={k} labels={["15", "30"]} server={null} compact />
+                </div>
+                <span style={{ fontSize: 14, fontWeight: active ? 700 : 500, display: "flex", alignItems: "center", gap: 6 }}>
+                  {active && <Icon name="check" size={15} />}{tr("scoreStyle." + k)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function navIconBtn(t) {
   return {
     width: 38, height: 38, borderRadius: "50%", border: "none", padding: 0, cursor: "pointer",
@@ -113,7 +152,8 @@ export default function App() {
   const [palette, setPalette] = useState(() => getStoredPalette());
   const t = themeForSurface(activeSurface, palette || "classic");
   const styles = useMemo(() => makeStyles(t), [t]);
-  const ctx = useMemo(() => ({ t, styles, palette: palette || "classic" }), [t, styles, palette]);
+  const [scoreStyle, setScoreStyle] = useState(() => getStoredScoreStyle());
+  const ctx = useMemo(() => ({ t, styles, palette: palette || "classic", scoreStyle }), [t, styles, palette, scoreStyle]);
 
   const [lang, setLang] = useState(() => getStoredLang());
   const langCtx = useMemo(() => ({
@@ -126,6 +166,8 @@ export default function App() {
   const [listVersion, setListVersion] = useState(0);
   const [showBackup, setShowBackup] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [showScoreStyle, setShowScoreStyle] = useState(false);
+  const pickScoreStyle = (k) => { setStoredScoreStyle(k); setScoreStyle(k); setShowScoreStyle(false); };
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const pickPalette = (p) => { setStoredPalette(p); setPalette(p); setShowPalette(false); };
@@ -215,6 +257,9 @@ export default function App() {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(0.8); }
         }
+        @keyframes sbSpin { 0% { transform: rotate(-220deg) scale(.82); } 70% { transform: rotate(10deg) scale(1.05); } 100% { transform: rotate(0) scale(1); } }
+        @keyframes sbWobble { 0% { transform: rotate(0); } 20% { transform: rotate(-8deg); } 45% { transform: rotate(6deg); } 70% { transform: rotate(-3deg); } 100% { transform: rotate(0); } }
+        @keyframes sbPop { 0% { transform: scale(.5); opacity: .2; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
         @keyframes ballBounce {
           0%, 100% { transform: translateY(-50%); }
           50% { transform: translateY(calc(-50% - 5px)); }
@@ -243,7 +288,7 @@ export default function App() {
                 <div style={{
                   position: "absolute", right: 48, top: "50%", transform: "translateY(-50%)",
                   display: "flex", alignItems: "center", gap: 2, padding: menuOpen ? 3 : 0, overflow: "hidden",
-                  maxWidth: menuOpen ? 260 : 0, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? "auto" : "none",
+                  maxWidth: menuOpen ? 300 : 0, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? "auto" : "none",
                   background: t.glass, WebkitBackdropFilter: "blur(18px) saturate(1.5)", backdropFilter: "blur(18px) saturate(1.5)",
                   border: `1px solid ${menuOpen ? t.glassLine : "transparent"}`, borderRadius: 999, boxShadow: menuOpen ? t.elev1 : "none",
                   transition: `max-width .32s ${t.ease}, opacity .2s ${t.ease}, padding .3s ${t.ease}`,
@@ -256,6 +301,9 @@ export default function App() {
                   </button>
                   <button onClick={() => { setMenuOpen(false); setShowPalette(true); }} aria-label={langCtx.t("palette.iconTitle")} title={langCtx.t("palette.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
                     <Icon name="palette" size={20} />
+                  </button>
+                  <button onClick={() => { setMenuOpen(false); setShowScoreStyle(true); }} aria-label={langCtx.t("scoreStyle.iconTitle")} title={langCtx.t("scoreStyle.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
+                    <Icon name="timer" size={20} />
                   </button>
                   <span aria-hidden="true" style={{ width: 1, height: 22, background: t.glassLine, margin: "0 3px", flexShrink: 0 }} />
                   {[["pl", "🇵🇱", "Polski"], ["en", "🇬🇧", "English"]].map(([code, flag, name]) => (
@@ -351,6 +399,9 @@ export default function App() {
           />
         )}
       </div>
+      {showScoreStyle && (
+        <ScoreStyleSheet t={t} tr={langCtx.t} current={scoreStyle} onPick={pickScoreStyle} onClose={() => setShowScoreStyle(false)} />
+      )}
       {showPalette && (
         <PaletteSheet t={t} tr={langCtx.t} current={palette} onPick={pickPalette} onClose={() => setShowPalette(false)} />
       )}

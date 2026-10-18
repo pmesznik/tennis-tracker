@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
-import { TopBar, FullScreen, BigButton, Chip, ScoreTile, TennisBall, ClockChip, ShareIcon, Icon } from "./ui.jsx";
+import { TopBar, FullScreen, BigButton, Chip, TennisBall, ClockChip, ShareIcon, Icon } from "./ui.jsx";
+import ScoreBoard from "./scoreboard.jsx";
 import * as storage from "./storage.js";
 import { computeScore, formatSetsString, buildSetRow, teamLabel, otherTeam, currentServerPlayerName, TEAM1, TEAM2 } from "./scoringEngine.js";
 import { shareMatch, buildLiveShareUrl } from "./shareLink.js";
@@ -29,7 +30,7 @@ function buildLivePayload(match, score) {
 }
 
 export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfaceChange }) {
-  const { t } = useThemeCtx();
+  const { t, scoreStyle } = useThemeCtx();
   const { t: tr } = useLang();
   const [match, setMatch] = useState(() => storage.getMatch(matchId));
   const [stage, setStage] = useState(INITIAL_STAGE);
@@ -219,6 +220,13 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   // currentServerPlayerName (w tie-breaku świadomie brak, rotacja punkt po
   // punkcie między 4 osobami nie jest tu liczona, patrz scoringEngine.js).
   const servingPlayer = currentServerPlayerName(match, score);
+  // Tarcza kręci się do przodu po wygranym gemie (liczba ukończonych gemów
+  // wzrosła względem stanu bez ostatniego punktu), przy cofnięciu — wstecz.
+  const prevScore = match.pointLog.length ? computeScore(rules, match.pointLog.slice(0, -1), match.initialServer || TEAM1, match.startedAt) : null;
+  const gameEnded = !!prevScore && score.completedGames > prevScore.completedGames;
+  const gameStatus = score.game && !score.game.isTiebreak
+    ? (score.game.a === "Ad" || score.game.b === "Ad" ? "advantage" : score.game.deuce ? "deuce" : null)
+    : null;
   const Header = (
     <div style={{ background: "transparent", flexShrink: 0, padding: "12px 16px 14px" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
@@ -260,16 +268,16 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
         {score.game ? (
-          <>
-            <ScoreTile key={`a-${score.game.a}`} value={score.game.a} serving={score.game.server === TEAM1} servingSide="left" />
-            <span style={{ fontSize: 22, fontWeight: 800, color: t.textMuted }}>:</span>
-            <ScoreTile key={`b-${score.game.b}`} value={score.game.b} serving={score.game.server === TEAM2} servingSide="right" />
-          </>
+          <ScoreBoard
+            style={scoreStyle} labels={[score.game.a, score.game.b]} server={score.game.server}
+            tiebreak={score.game.isTiebreak} gameEnded={gameEnded}
+          />
         ) : <span style={{ fontSize: 22, fontWeight: 800, color: t.accent }}>—</span>}
       </div>
-      {(score.game?.isTiebreak || score.isMatchPoint) && (
+      {(score.game?.isTiebreak || score.isMatchPoint || gameStatus) && (
         <div style={{ textAlign: "center", marginTop: 8 }}>
           {score.game?.isTiebreak && <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.05em", color: t.textMuted }}>{tr("tracker.tiebreakBadge")}</span>}
+          {gameStatus && <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", color: t.textSub }}>{tr("tracker." + gameStatus)}</span>}
           {score.isMatchPoint && <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.05em", color: t.danger, marginLeft: 8 }}>{tr("tracker.matchPointBadge")}</span>}
         </div>
       )}
