@@ -242,6 +242,7 @@
     <option value="#zawodnicy">Zawodnicy</option>
     <option value="#rywalizacje">Rywalizacje drużynowe</option>
     <option value="#backup">Kopia zapasowa</option>
+    <option value="#wyglad">Wygląd i ikona</option>
     <option value="#nawierzchnie">Nawierzchnie i motyw</option>
     <option value="#jezyki">Języki</option>
     <option value="#stos">Stos technologiczny</option>
@@ -262,6 +263,7 @@
     <a href="#zawodnicy">Zawodnicy</a>
     <a href="#rywalizacje">Rywalizacje drużynowe</a>
     <a href="#backup">Kopia zapasowa</a>
+    <a href="#wyglad">Wygląd i ikona</a>
     <a href="#nawierzchnie">Nawierzchnie i motyw</a>
     <a href="#jezyki">Języki</a>
     <a href="#stos">Stos technologiczny</a>
@@ -279,7 +281,7 @@
           <div class="tagline">Dokumentacja projektu</div>
         </div>
       </div>
-      <div class="version-pill"><span class="dot"></span>v0.9.1</div>
+      <div class="version-pill"><span class="dot"></span>v0.11.0</div>
     </header>
 
     <p class="lede">
@@ -375,6 +377,16 @@
           <span class="fi">🏆</span>
           <h3>Rywalizacje drużynowe</h3>
           <p>Dwie drużyny, dowolna liczba meczów singlowych i deblowych — wynik to suma wygranych meczów, jak w Pucharze Davisa.</p>
+        </div>
+        <div class="feature">
+          <span class="fi">🎨</span>
+          <h3>Klasyczna lub nowoczesna kolorystyka</h3>
+          <p>Wybór przy pierwszym uruchomieniu, zmiana w menu. W obu paletach kolor nadal zależy od nawierzchni meczu.</p>
+        </div>
+        <div class="feature">
+          <span class="fi">⋯</span>
+          <h3>Chowane menu i przycisk wstecz</h3>
+          <p>Ikony kopii, rywalizacji, kolorystyki i języka chowają się w jednej ikonie. „Wstecz” w Androidzie zamyka nakładki i cofa ekrany.</p>
         </div>
       </div>
     </section>
@@ -570,6 +582,26 @@
       </p>
     </section>
 
+    <section id="wyglad">
+      <div class="eyebrow">Wygląd</div>
+      <h2>Nowoczesny wygląd i ikona aplikacji</h2>
+      <p>
+        Interfejs opiera się na wewnętrznym standardzie designu: duże zaokrąglenia, tonalne tła kart i przycisków
+        barwione akcentem, półprzezroczyste „szkło” tylko na elementach pływających (pasek tytułu, chip menu, dolne
+        arkusze), cele dotyku min. 44–48 px, jeden główny przycisk na ekran. Tokeny (zaokrąglenia, odstępy, ruch,
+        tonalne tła) siedzą w <code>src/theme.js</code>, a ikony to spójny zestaw SVG (<code>Icon</code> w
+        <code>ui.jsx</code>) zamiast emoji, które różnie wyglądają na różnych telefonach.
+      </p>
+      <ul class="plain">
+        <li><strong>Czcionka</strong> — systemowa (Roboto) w całej aplikacji; Barlow Condensed tylko na kafelkach wyniku i liczbach setów.</li>
+        <li><strong>Okna</strong> — zamiast okienek na środku, dolne arkusze z uchwytem (kopia zapasowa, wybór poziomu śledzenia, kolorystyka).</li>
+        <li><strong>Chowane menu</strong> — ikona ⋯ w nagłówku rozwija chip (kopia zapasowa, rywalizacje, kolorystyka, język) w lewo i zwija go po wyborze, po dotknięciu poza nim i przyciskiem „wstecz”.</li>
+        <li><strong>Przycisk „wstecz” Androida</strong> — <code>MainActivity.java</code> pyta aplikację (<code>window.appBack()</code>), a ta najpierw zamyka najwyższą nakładkę (<code>backStack.js</code>), potem cofa o jeden ekran; dopiero z listy meczów aplikacja się zamyka.</li>
+        <li><strong>Ikona</strong> — piłka tenisowa podzielona szwem na dwie połowy: magenta (gracz 1) i kwasowa zieleń (gracz 2) na tle „Noc” <code>#0A0A12</code>. Adaptive icon z warstwą monochrome (ikony motywu Androida 13+), favicon, ikona w nagłówku apki i splash w kolorze ikony.</li>
+        <li><strong>Pasek stanu i nawigacji</strong> — jasne ikony na ciemnym tle (<code>SystemBars</code>, styl <code>DARK</code>).</li>
+      </ul>
+    </section>
+
     <section id="nawierzchnie">
       <div class="eyebrow">Motyw</div>
       <h2>Kolor aplikacji = nawierzchnia kortu</h2>
@@ -584,6 +616,14 @@
         <div class="surface-card"><div class="surface-dot" style="background:var(--hard)"></div><div class="sname">Twarda</div><div class="shex">#38bdf8</div></div>
         <div class="surface-card"><div class="surface-dot" style="background:var(--grass)"></div><div class="sname">Trawa</div><div class="shex">#4ade80</div></div>
       </div>
+      <p>
+        Dwie palety do wyboru (<code>atz_palette</code>): <strong>klasyczna</strong> (granat, jak dotąd) i
+        <strong>nowoczesna</strong> — prawie czarne tła z kolorową poświatą w rogu i jednym żywym akcentem na
+        nawierzchnię: pomarańcz dla ziemnej <code>#FF7A3D</code>, błękit dla twardej <code>#3FB6FF</code>, zieleń dla
+        trawy <code>#4DE58A</code>; neutralny ekran używa magenty <code>#FF3D81</code> i kwasowej zieleni
+        <code>#C6FF00</code> z ikony. Wybór pojawia się jako karta z dwoma chipami po wyborze języka i można go
+        zmienić z menu (ikona palety).
+      </p>
       <p>Marka bazowa (ikona, splash, neutralne tło) trzyma się stałej palety z <code>src/palette.js</code>:</p>
       <table>
         <tr><th>Nazwa</th><th>Hex</th><th>Użycie</th></tr>
@@ -632,10 +672,12 @@ translate("en", "tracker.pointFor", { name: "Novak" })
       <h2>Struktura projektu</h2>
       <pre><code><span class="tree-f">src/</span>
 <span class="tree-c">├─</span> App.jsx            <span class="tree-comment">// routing widoków, motyw, wybór języka</span>
-<span class="tree-c">├─</span> theme.js           <span class="tree-comment">// motywy kolorystyczne wg nawierzchni</span>
+<span class="tree-c">├─</span> theme.js           <span class="tree-comment">// palety (klasyczna/nowoczesna) wg nawierzchni, tokeny</span>
 <span class="tree-c">├─</span> palette.js         <span class="tree-comment">// stałe kolory marki</span>
 <span class="tree-c">├─</span> i18n.js            <span class="tree-comment">// słownik PL/EN + kontekst języka</span>
 <span class="tree-c">├─</span> version.js         <span class="tree-comment">// nazwa i numer wersji</span>
+<span class="tree-c">├─</span> backStack.js       <span class="tree-comment">// stos nakładek dla przycisku „wstecz”</span>
+<span class="tree-c">├─</span> assets/           <span class="tree-comment">// ikona aplikacji (SVG)</span>
 <span class="tree-c">└─</span> matchtracker/
 <span class="tree-c">   ├─</span> scoringEngine.js  <span class="tree-comment">// computeScore(), presety reguł</span>
 <span class="tree-c">   ├─</span> time.js           <span class="tree-comment">// formatDuration, czas punktów/setów</span>
@@ -696,7 +738,7 @@ npx cap sync android</code></pre>
 
     <footer>
       <span>Tennis Tracker — dokumentacja wewnętrzna projektu.</span>
-      <span>Wygenerowano dla wersji <span class="mono">v0.9.1</span></span>
+      <span>Wygenerowano dla wersji <span class="mono">v0.11.0</span></span>
     </footer>
   </main>
 </div>
