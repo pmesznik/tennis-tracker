@@ -1,5 +1,5 @@
 // Tennis Tracker — style tablicy wyniku gema: Klapki (domyślny), Tarcza, Piłka,
-// Rakieta, Pierścień. Wszystkie dostają te same dane (etykiety punktów, kto
+// Pierścień. Wszystkie dostają te same dane (etykiety punktów, kto
 // serwuje, czy to tie-break, czy właśnie skończył się gem) — liczenie punktów
 // zostaje w scoringEngine.js, tu jest tylko wyświetlanie. Tarcza i Pierścień
 // znają tylko 0/15/30/40/Ad, więc w tie-breaku wracają do Klapek.
@@ -7,7 +7,7 @@ import { useRef } from "react";
 import { useThemeCtx } from "../theme.js";
 import { ScoreTile, TennisBall } from "./ui.jsx";
 
-export const SCORE_STYLES = ["klapki", "tarcza", "pilka", "rakieta", "pierscien"];
+export const SCORE_STYLES = ["klapki", "tarcza", "pilka", "pierscien"];
 const KEY = "atz_score_style";
 
 export function getStoredScoreStyle() {
@@ -36,8 +36,8 @@ const RING_PATHS = [
 // Skala: pełne kafelki są zmniejszone tak, żeby dwie tablice mieściły się w
 // 360 px i zostawiały miejsce na duże przyciski punktów; podgląd w menu jest
 // jeszcze mniejszy. `zoom` działa w Chromium/WebView Androida.
-const FULL = { tarcza: 0.68, pilka: 0.78, rakieta: 0.66, pierscien: 0.8 };
-const MINI = { tarcza: 0.3, pilka: 0.36, rakieta: 0.3, pierscien: 0.38 };
+const FULL = { tarcza: 0.68, pilka: 0.78, pierscien: 0.8 };
+const MINI = { tarcza: 0.3, pilka: 0.36, pierscien: 0.38 };
 
 function Dial({ label, forward, k }) {
   const { t } = useThemeCtx();
@@ -111,35 +111,6 @@ function Ball({ label, k }) {
   );
 }
 
-function Racket({ label, k }) {
-  const { t } = useThemeCtx();
-  const net = "rgba(255,255,255,.45)";
-  return (
-    <div key={label} style={{
-      zoom: k, width: 120, height: 190, display: "flex", flexDirection: "column", alignItems: "center",
-      transformOrigin: "50% 100%", animation: "sbWobble .55s ease-out",
-    }}>
-      <span style={{
-        width: 112, height: 146, boxSizing: "border-box", borderRadius: "50%", border: `9px solid ${t.accent}`,
-        backgroundColor: "#14121a",
-        backgroundImage: `repeating-linear-gradient(0deg, ${net} 0 1.5px, transparent 1.5px 11px), repeating-linear-gradient(90deg, ${net} 0 1.5px, transparent 1.5px 11px)`,
-        boxShadow: "inset 0 0 0 3px #0c0b10, 0 10px 20px rgba(0,0,0,.4)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <span style={{
-          fontFamily: t.fontScore, fontWeight: 800, fontSize: 60, lineHeight: 1, color: "#fff",
-          background: "#14121a", borderRadius: 10, padding: "3px 10px 0",
-        }}>{label}</span>
-      </span>
-      <span style={{ width: 30, height: 16, marginTop: -2, background: t.accent, clipPath: "polygon(22% 0, 78% 0, 66% 100%, 34% 100%)" }} />
-      <span style={{
-        width: 14, height: 28, borderRadius: "0 0 5px 5px", backgroundColor: "#0c0b10",
-        backgroundImage: "repeating-linear-gradient(160deg, rgba(255,255,255,.18) 0 2px, transparent 2px 6px)",
-      }} />
-    </div>
-  );
-}
-
 function Ring({ label, k }) {
   const { t } = useThemeCtx();
   const n = RING_FILL[label] ?? 0;
@@ -185,7 +156,6 @@ export default function ScoreBoard({ style, labels, server, tiebreak = false, ga
     if (eff === "klapki") body = <ScoreTile key={label} value={label} size={compact ? "sm" : "lg"} />;
     else if (eff === "tarcza") body = <Dial label={label} forward={gameEnded} k={scale} />;
     else if (eff === "pilka") body = <Ball label={label} k={scale} />;
-    else if (eff === "rakieta") body = <Racket label={label} k={scale} />;
     else body = <Ring label={label} k={scale} />;
     const serving = !compact && server === (i === 0 ? "team1" : "team2");
     return (

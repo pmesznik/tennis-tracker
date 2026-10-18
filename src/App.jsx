@@ -258,7 +258,6 @@ export default function App() {
           50% { opacity: 0.4; transform: scale(0.8); }
         }
         @keyframes sbSpin { 0% { transform: rotate(-220deg) scale(.82); } 70% { transform: rotate(10deg) scale(1.05); } 100% { transform: rotate(0) scale(1); } }
-        @keyframes sbWobble { 0% { transform: rotate(0); } 20% { transform: rotate(-8deg); } 45% { transform: rotate(6deg); } 70% { transform: rotate(-3deg); } 100% { transform: rotate(0); } }
         @keyframes sbPop { 0% { transform: scale(.5); opacity: .2; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
         @keyframes ballBounce {
           0%, 100% { transform: translateY(-50%); }
