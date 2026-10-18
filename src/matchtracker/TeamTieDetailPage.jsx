@@ -2,7 +2,7 @@
 // wygranych meczów po każdej stronie) i lista meczów wchodzących w jej skład.
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
-import { Card, TopBar, FullScreen, ScrollBody } from "./ui.jsx";
+import { Card, TopBar, FullScreen, ScrollBody, Icon } from "./ui.jsx";
 import * as storage from "./storage.js";
 import { computeScore, buildSetRow, teamLabel } from "./scoringEngine.js";
 import * as ties from "./teamTies.js";
@@ -27,18 +27,18 @@ function TieMatchRow({ match, onOpen }) {
     <Card style={{ cursor: "pointer" }}>
       <div style={{ padding: 14 }} onClick={() => onOpen(match)}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 650, flex: 1 }}>
             {name1} <span style={{ color: t.textMuted }}>–</span> {name2}
           </div>
           {match.status === "in_progress" && (
             <span style={{
-              fontSize: 10, fontWeight: 800, textTransform: "uppercase",
-              background: "rgba(16,185,129,0.15)", color: "#10b981",
-              padding: "3px 8px", borderRadius: 6, flexShrink: 0,
+              fontSize: 11.5, fontWeight: 650, letterSpacing: "0.04em", textTransform: "uppercase",
+              background: "rgba(16,185,129,0.16)", color: "#34d399",
+              padding: "4px 10px", borderRadius: 999, flexShrink: 0,
             }}>{tr("list.inProgress")}</span>
           )}
         </div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginTop: 6, display: "flex", gap: 8 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: t.text, marginTop: 6, display: "flex", gap: 12, fontFamily: t.fontScore }}>
           {sets.map((s, i) => <span key={i}>{s}</span>)}
         </div>
       </div>
@@ -75,21 +75,21 @@ export default function TeamTieDetailPage({ tieId, onBack, onDeleted, onAddMatch
       <TopBar
         title={tr("tie.detailTitle")} onBack={onBack}
         right={
-          <button onClick={handleDelete} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, color: t.textSub }} title={tr("common.delete")}>🗑️</button>
+          <button onClick={handleDelete} aria-label={tr("common.delete")} title={tr("common.delete")} style={{ background: "none", border: "none", cursor: "pointer", color: t.textSub, minWidth: 44, minHeight: 44, display: "grid", placeItems: "center" }}><Icon name="trash" size={20} /></button>
         }
       />
       <ScrollBody style={{ padding: 16 }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: t.textSub }}>{tie.team1Name} <span style={{ color: t.textMuted }}>vs</span> {tie.team2Name}</div>
-          <div style={{ fontSize: 46, fontWeight: 800, color: t.accent, marginTop: 6, letterSpacing: "0.02em" }}>{score.wonA} : {score.wonB}</div>
+          <div style={{ fontSize: 52, fontWeight: 700, color: t.accent, marginTop: 6, letterSpacing: "0.02em", fontFamily: t.fontScore }}>{score.wonA} : {score.wonB}</div>
           <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>
             {tr("tie.matchesPlayed", { played: score.playedCount, total: score.totalCount })}
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-          <button style={styles.primaryBtn} onClick={() => onAddMatch("track")}>🎾 {tr("tie.addMatchTrack")}</button>
-          <button style={styles.secondaryBtn} onClick={() => onAddMatch("manual")}>✏️ {tr("tie.addMatchManual")}</button>
+          <button style={styles.primaryBtn} onClick={() => onAddMatch("track")}><Icon name="add" size={21} />{tr("tie.addMatchTrack")}</button>
+          <button style={styles.secondaryBtn} onClick={() => onAddMatch("manual")}><Icon name="edit" size={19} />{tr("tie.addMatchManual")}</button>
         </div>
 
         {tieMatches.length === 0 ? (

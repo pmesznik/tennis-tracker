@@ -1,5 +1,5 @@
 // Tennis Tracker v0.2.0 — główny komponent aplikacji.
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { ThemeContext, themeForSurface, makeStyles } from "./theme.js";
 import { LangContext, getStoredLang, setStoredLang, translate } from "./i18n.js";
 import { APP_NAME, APP_VERSION } from "./version.js";
@@ -12,6 +12,9 @@ import TeamTieListPage from "./matchtracker/TeamTieListPage.jsx";
 import TeamTieSetupPage from "./matchtracker/TeamTieSetupPage.jsx";
 import TeamTieDetailPage from "./matchtracker/TeamTieDetailPage.jsx";
 import { getTeamTie } from "./matchtracker/teamTies.js";
+import { Icon } from "./matchtracker/ui.jsx";
+import { pushBack, popBack } from "./backStack.js";
+import appIcon from "./assets/app-icon.svg";
 
 // Ekran przy pierwszym uruchomieniu — wybór języka jest jawny (nie zgadujemy
 // z ustawień systemu), żeby uniknąć niespodzianek. Zapamiętany w localStorage,
@@ -19,14 +22,21 @@ import { getTeamTie } from "./matchtracker/teamTies.js";
 function LanguagePickerScreen({ t, styles, onPick }) {
   return (
     <div style={{ ...styles.app, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24, padding: 24 }}>
-      <span style={{ fontSize: 40 }}>🎾</span>
-      <span style={{ fontSize: 18, fontWeight: 800, color: t.text }}>Wybierz język / Choose language</span>
+      <img src={appIcon} width={96} height={96} alt="" style={{ borderRadius: 26, boxShadow: t.elevFloat }} />
+      <span style={{ fontSize: 20, fontWeight: 700, color: t.text }}>Wybierz język / Choose language</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 280 }}>
         <button style={styles.primaryBtn} onClick={() => onPick("pl")}>🇵🇱 Polski</button>
         <button style={styles.secondaryBtn} onClick={() => onPick("en")}>🇬🇧 English</button>
       </div>
     </div>
   );
+}
+
+function navIconBtn(t) {
+  return {
+    width: 38, height: 38, borderRadius: "50%", border: "none", padding: 0, cursor: "pointer",
+    background: "transparent", color: t.text, display: "grid", placeItems: "center", lineHeight: 1,
+  };
 }
 
 export default function App() {
@@ -53,14 +63,41 @@ export default function App() {
     setActiveSurface(null);
   };
 
+  // Przycisk "wstecz" Androida (MainActivity.java woła window.appBack):
+  // najpierw zamyka nakładki (okna), potem cofa o jeden ekran, a na liście
+  // meczów oddaje sterowanie systemowi (wyjście z aplikacji).
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  useEffect(() => {
+    window.appBack = () => {
+      if (popBack()) return true;
+      const v = viewRef.current;
+      if (v.name === "list") return false;
+      if (v.name === "setup" || v.name === "tracker" || v.name === "summary") {
+        if (v.tieId) setView({ name: "tieDetail", tieId: v.tieId });
+        else goToList();
+      } else if (v.name === "tieSetup" || v.name === "tieDetail") {
+        setView({ name: "tieList" });
+      } else {
+        goToList();
+      }
+      return true;
+    };
+    return () => { delete window.appBack; };
+  }, []);
+  useEffect(() => {
+    if (!showBackup) return undefined;
+    return pushBack(() => setShowBackup(false));
+  }, [showBackup]);
+
   if (!lang) {
     return (
       <ThemeContext.Provider value={ctx}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap');
           * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
           html, body { height: 100%; }
-          body { background: ${t.bg}; background-image: ${t.bgGradient}; background-attachment: fixed; background-size: cover; }
+          body { font-family: ${t.fontUi}; color: ${t.text}; background: ${t.bg}; background-image: ${t.bgGradient}; background-attachment: fixed; background-size: cover; }
         `}</style>
         <LanguagePickerScreen t={t} styles={styles} onPick={langCtx.setLang} />
       </ThemeContext.Provider>
@@ -71,10 +108,10 @@ export default function App() {
     <ThemeContext.Provider value={ctx}>
       <LangContext.Provider value={langCtx}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; }
-        body { background: ${t.bg}; background-image: ${t.bgGradient}; background-attachment: fixed; background-size: cover; transition: background-color 0.4s ease; }
+        body { font-family: ${t.fontUi}; color: ${t.text}; background: ${t.bg}; background-image: ${t.bgGradient}; background-attachment: fixed; background-size: cover; transition: background-color 0.4s ease; }
         @keyframes tileFlip {
           from { transform: rotateX(85deg); opacity: 0.3; }
           to   { transform: rotateX(0deg);  opacity: 1; }
@@ -87,7 +124,13 @@ export default function App() {
           0%, 100% { transform: translateY(-50%); }
           50% { transform: translateY(calc(-50% - 5px)); }
         }
+        button { font-family: inherit; }
+        button:active:not(:disabled) { transform: scale(.985); }
+        :focus-visible { outline: 2.5px solid ${t.accent}b3; outline-offset: 2px; }
         input::placeholder { color: ${t.textMuted}; }
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+        }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${t.scrollbar}; border-radius: 4px; }
@@ -97,24 +140,28 @@ export default function App() {
         {view.name === "list" && (
           <>
             <nav style={styles.nav}>
-              <span style={styles.navTitle}>🎾 {APP_NAME}</span>
-              <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center" }}>
-                <button onClick={() => setShowBackup(true)} title={langCtx.t("backup.iconTitle")} style={{
-                  background: "none", border: "none", cursor: "pointer", fontSize: 17,
-                  color: t.textMuted, padding: 4, lineHeight: 1,
-                }}>💾</button>
-                <button onClick={() => setView({ name: "tieList" })} title={langCtx.t("tie.iconTitle")} style={{
-                  background: "none", border: "none", cursor: "pointer", fontSize: 17,
-                  color: t.textMuted, padding: 4, lineHeight: 1,
-                }}>🏆</button>
-                <button onClick={() => langCtx.setLang("pl")} title="Polski" style={{
-                  background: "none", border: "none", cursor: "pointer", fontSize: 18,
-                  opacity: langCtx.lang === "pl" ? 1 : 0.35, padding: 4, lineHeight: 1,
-                }}>🇵🇱</button>
-                <button onClick={() => langCtx.setLang("en")} title="English" style={{
-                  background: "none", border: "none", cursor: "pointer", fontSize: 18,
-                  opacity: langCtx.lang === "en" ? 1 : 0.35, padding: 4, lineHeight: 1,
-                }}>🇬🇧</button>
+              <span style={styles.navTitle}>
+                <img src={appIcon} width={32} height={32} alt="" style={{ borderRadius: 9, flexShrink: 0 }} />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{APP_NAME}</span>
+              </span>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 2, padding: 3, flexShrink: 0,
+                background: t.glass, WebkitBackdropFilter: "blur(18px) saturate(1.5)", backdropFilter: "blur(18px) saturate(1.5)",
+                border: `1px solid ${t.glassLine}`, borderRadius: 999, boxShadow: t.elev1,
+              }}>
+                <button onClick={() => setShowBackup(true)} aria-label={langCtx.t("backup.iconTitle")} title={langCtx.t("backup.iconTitle")} style={navIconBtn(t)}>
+                  <Icon name="save" size={20} />
+                </button>
+                <button onClick={() => setView({ name: "tieList" })} aria-label={langCtx.t("tie.iconTitle")} title={langCtx.t("tie.iconTitle")} style={navIconBtn(t)}>
+                  <Icon name="trophy" size={20} />
+                </button>
+                <span aria-hidden="true" style={{ width: 1, height: 22, background: t.glassLine, margin: "0 3px" }} />
+                {[["pl", "🇵🇱", "Polski"], ["en", "🇬🇧", "English"]].map(([code, flag, name]) => (
+                  <button key={code} onClick={() => langCtx.setLang(code)} aria-label={name} aria-pressed={langCtx.lang === code} title={name}
+                    style={{ ...navIconBtn(t), width: 34, fontSize: 17, background: langCtx.lang === code ? t.tonalStrong : "transparent", opacity: langCtx.lang === code ? 1 : 0.55 }}>
+                    {flag}
+                  </button>
+                ))}
               </div>
             </nav>
             <MatchListPage
@@ -126,7 +173,7 @@ export default function App() {
                 setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id } : { name: "summary", matchId: m.id });
               }}
             />
-            <div style={{ textAlign: "center", fontSize: 11, color: t.textMuted, padding: "0 0 20px" }}>
+            <div style={{ textAlign: "center", fontSize: 12, color: t.textMuted, padding: "0 0 calc(20px + env(safe-area-inset-bottom, 0px))" }}>
               {APP_NAME} v{APP_VERSION}
             </div>
           </>

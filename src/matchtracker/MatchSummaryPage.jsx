@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang, surfaceLabel } from "../i18n.js";
-import { TopBar, FullScreen, ScrollBody, Card, ShareIcon } from "./ui.jsx";
+import { TopBar, FullScreen, ScrollBody, Card, ShareIcon, Icon } from "./ui.jsx";
 import * as storage from "./storage.js";
 import { computeScore, formatSetsString, buildSetRow, teamLabel, TEAM1, TEAM2 } from "./scoringEngine.js";
 import { shareMatch, buildShareUrl, buildProShareUrl } from "./shareLink.js";
@@ -71,8 +71,8 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
             <div style={{ fontSize: 13, color: t.textMuted, margin: "4px 0" }}>{tr("common.vs")}</div>
             <div style={{ fontSize: 18, fontWeight: 800 }}>{name2}</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: t.accent, marginTop: 10 }}>{setsRow.join("  ")}</div>
-            <div style={{ fontSize: 12, color: t.textSub, marginTop: 8 }}>
-              📅 {match.date}{match.surface ? ` · ${surfaceLabel(lang, match.surface)}` : ""}
+            <div style={{ fontSize: 13, color: t.textSub, marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Icon name="calendar" size={15} /> {match.date}{match.surface ? ` · ${surfaceLabel(lang, match.surface)}` : ""}
             </div>
             {match.note && <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>{match.note}</div>}
           </div>
@@ -84,7 +84,7 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
               {tr("summary.matchDuration")}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", fontSize: 15 }}>
-              <span>⏱ {tr("summary.matchDuration")}</span>
+              <span>{tr("summary.matchDuration")}</span>
               <strong style={{ fontVariantNumeric: "tabular-nums" }}>{formatDuration(totalDurationMs)}</strong>
             </div>
             {score && score.sets.length > 0 && (
@@ -143,19 +143,19 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
           {match.status === "in_progress" && (
-            <button style={styles.primaryBtn} onClick={() => onContinue(match.id)}>▶️ {tr("summary.continueMatch")}</button>
+            <button style={styles.primaryBtn} onClick={() => onContinue(match.id)}><Icon name="play" size={22} />{tr("summary.continueMatch")}</button>
           )}
           <button
-            style={{ ...styles.primaryBtn, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            style={styles.primaryBtn}
             onClick={() => shareMatch(`${name1} – ${name2}: ${setsRow.join(" ")}`, buildShareUrl(match, setsRow))}
           ><ShareIcon size={15} /> {tr("summary.shareResult")}</button>
           {hasPointDetail && (
             <button
-              style={{ ...styles.secondaryBtn, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+              style={styles.secondaryBtn}
               onClick={() => shareMatch(`${name1} – ${name2}: ${setsRow.join(" ")}`, buildProShareUrl(match, setsRow))}
             ><ShareIcon size={15} /> {tr("summary.shareProResult")}</button>
           )}
-          <button style={{ ...styles.secondaryBtn, color: t.danger }} onClick={handleDelete}>🗑️ {tr("common.deleteMatch")}</button>
+          <button style={{ ...styles.secondaryBtn, background: `${t.danger}1c`, color: t.danger }} onClick={handleDelete}><Icon name="trash" size={19} />{tr("common.deleteMatch")}</button>
         </div>
       </ScrollBody>
     </FullScreen>

@@ -59,25 +59,51 @@ export function ShareIcon({ size = 14 }) {
   );
 }
 
+// Spójny zestaw ikon (Material) zamiast emoji, które różnie wyglądają na
+// różnych telefonach. Kolor bierze z `currentColor`.
+const ICON_PATHS = {
+  add: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z",
+  edit: "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z",
+  trash: "M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z",
+  trophy: "M19 5h-2V3H7v2H5a2 2 0 0 0-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.95V19H7v2h10v-2h-4v-3.1c1.63-.32 2.98-1.45 3.61-2.95C19.08 12.63 21 10.55 21 8V7a2 2 0 0 0-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z",
+  save: "M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z",
+  download: "M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z",
+  upload: "M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z",
+  calendar: "M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11zM7 11h5v5H7z",
+  play: "M8 5v14l11-7z",
+  undo: "M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z",
+  back: "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z",
+  star: "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
+  starOutline: "M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z",
+  close: "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
+};
+export function Icon({ name, size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <path d={ICON_PATHS[name]} />
+    </svg>
+  );
+}
+
 export function TopBar({ title, onBack, right }) {
   const { t } = useThemeCtx();
   const { t: tr } = useLang();
   return (
     <div style={{
-      flexShrink: 0, background: t.navBg, backdropFilter: "blur(12px)",
-      borderBottom: `1px solid ${t.border}`, padding: "12px 14px",
-      paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
-      display: "flex", alignItems: "center", gap: 10,
+      flexShrink: 0, background: t.glass, WebkitBackdropFilter: "blur(18px) saturate(1.5)", backdropFilter: "blur(18px) saturate(1.5)",
+      borderBottom: `1px solid ${t.glassLine}`, padding: "8px 12px",
+      paddingTop: "calc(8px + env(safe-area-inset-top, 0px))",
+      display: "flex", alignItems: "center", gap: 10, minHeight: 56,
     }}>
       {onBack && (
-        <button onClick={onBack} style={{
-          fontSize: 13, fontWeight: 800, color: t.accent,
-          background: "none", border: "none", cursor: "pointer",
-          fontFamily: "inherit", flexShrink: 0, padding: 0,
-        }}>← {tr("common.back")}</button>
+        <button onClick={onBack} aria-label={tr("common.back")} style={{
+          width: 44, height: 44, borderRadius: "50%", border: "none", flexShrink: 0,
+          background: t.tonal, color: t.text, cursor: "pointer",
+          display: "grid", placeItems: "center", padding: 0,
+        }}><Icon name="back" size={22} /></button>
       )}
       <span style={{
-        fontSize: 15, fontWeight: 700, color: t.text, flex: 1,
+        fontSize: 17, fontWeight: 650, color: t.text, flex: 1, letterSpacing: "0.005em",
         whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
       }}>{title}</span>
       {right}
@@ -119,8 +145,9 @@ export function BigButton({ label, sub, onClick, color, tall = false, disabled =
       style={{
         width: "100%", minHeight: tall ? 160 : 84,
         background: disabled ? "#5b6472" : bg,
-        color: "#fff", border: "none", borderRadius: 10,
-        fontSize: 17, fontWeight: 700, fontFamily: "inherit",
+        color: "#fff", border: "none", borderRadius: t.rCard,
+        boxShadow: t.elev1,
+        fontSize: 18, fontWeight: 700, fontFamily: "inherit",
         cursor: disabled ? "default" : "pointer",
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         gap: 4, opacity: disabled ? 0.6 : 1, padding: "10px 12px", textAlign: "center",
@@ -145,8 +172,8 @@ export function Card({ children, style }) {
   const { t } = useThemeCtx();
   return (
     <div style={{
-      background: t.surface, border: `1px solid ${t.border}`,
-      boxShadow: t.cardShadow, borderRadius: 14, overflow: "hidden",
+      background: t.surface, border: `1px solid ${t.glassLine}`,
+      boxShadow: t.elev1, borderRadius: t.rCard, overflow: "hidden",
       marginBottom: 12, ...style,
     }}>
       {children}
@@ -187,7 +214,7 @@ export function ScoreTile({ value, size = "lg", serving = false, servingSide = "
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(255,255,255,0.06), transparent 55%)" }} />
         <span style={{
           position: "relative", zIndex: 1, color: t.accent, fontWeight: 800,
-          fontSize: big ? 30 : 17, lineHeight: 1, fontFamily: "inherit",
+          fontSize: big ? 32 : 18, lineHeight: 1, fontFamily: t.fontScore,
           textShadow: "0 1px 2px rgba(0,0,0,0.5)",
         }}>{value}</span>
       </div>
@@ -200,12 +227,13 @@ export function Chip({ label, active, onClick, color }) {
   const c = color || t.accent;
   return (
     <button onClick={onClick} style={{
-      fontSize: 12, fontWeight: active ? 800 : 600, padding: "8px 12px", borderRadius: 16,
+      display: "inline-flex", alignItems: "center", gap: 6, minHeight: 36,
+      fontSize: 13, fontWeight: active ? 650 : 500, padding: "6px 13px", borderRadius: 999,
       border: `1px solid ${active ? c : t.borderStrong}`,
-      background: active ? `${c}22` : t.inputBg,
-      color: active ? c : t.text, cursor: "pointer", fontFamily: "inherit",
+      background: active ? `${c}33` : t.inputBg,
+      color: t.text, cursor: "pointer", fontFamily: "inherit",
     }}>
-      {active ? "✓ " : ""}{label}
+      {active && <span aria-hidden="true">✓</span>}{label}
     </button>
   );
 }

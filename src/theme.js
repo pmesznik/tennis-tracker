@@ -128,10 +128,36 @@ const GRASS = {
 
 const THEME_BY_SURFACE = { Ziemna: CLAY, Twarda: HARD, Trawa: GRASS };
 
+// Tokeny z STANDARD_DESIGNU (zaokrąglenia, odstępy, dotyk, ruch) wspólne dla
+// wszystkich motywów; tonal = tło przycisków/chipów/ikon barwione akcentem,
+// glass = półprzezroczyste tło elementów pływających nad treścią.
+const FONT_UI = "system-ui, Roboto, 'Segoe UI', sans-serif";
+const FONT_SCORE = "'Barlow Condensed', 'Roboto Condensed', Roboto, sans-serif";
+function withTokens(theme) {
+  return {
+    ...theme,
+    rLg: 28, rCard: 20, rMd: 16, rSm: 12,
+    sp1: 4, sp2: 8, sp3: 12, sp4: 16, sp5: 24,
+    touch: 46,
+    ease: "cubic-bezier(.2,.8,.2,1)",
+    fontUi: FONT_UI, fontScore: FONT_SCORE,
+    tonal: `${theme.accent}24`,
+    tonalStrong: `${theme.accent}3d`,
+    glass: theme.navBg,
+    glassLine: "rgba(255,255,255,0.10)",
+    elev1: "0 1px 2px rgba(0,0,0,0.28), 0 3px 10px rgba(0,0,0,0.22)",
+    elevFloat: "0 6px 24px rgba(0,0,0,0.35)",
+  };
+}
+const TOKENIZED = {
+  neutral: withTokens(NEUTRAL), clay: withTokens(CLAY), hard: withTokens(HARD), grass: withTokens(GRASS),
+};
+const TOKEN_BY_SURFACE = { Ziemna: TOKENIZED.clay, Twarda: TOKENIZED.hard, Trawa: TOKENIZED.grass };
+
 // surface: nazwa nawierzchni ("Ziemna"/"Twarda"/"Trawa") albo null/undefined
 // (brak kontekstu meczu → neutralny granat).
 export function themeForSurface(surface) {
-  return THEME_BY_SURFACE[surface] || NEUTRAL;
+  return TOKEN_BY_SURFACE[surface] || TOKENIZED.neutral;
 }
 
 export function surfaceDotColor(surface) {
@@ -141,7 +167,8 @@ export function surfaceDotColor(surface) {
 export function makeStyles(t) {
   return {
     app: {
-      fontFamily: "'Barlow Condensed', 'Oswald', sans-serif",
+      fontFamily: t.fontUi,
+      fontSize: 15, lineHeight: 1.4,
       background: "transparent",
       minHeight: "100vh",
       color: t.text,
@@ -151,54 +178,51 @@ export function makeStyles(t) {
     },
     nav: {
       position: "sticky", top: 0, zIndex: 100,
-      background: t.navBg,
-      backdropFilter: "blur(12px)",
-      borderBottom: `1px solid ${t.border}`,
-      padding: "calc(12px + env(safe-area-inset-top, 0px)) 16px 10px",
+      padding: "calc(10px + env(safe-area-inset-top, 0px)) 14px 8px",
       display: "flex", alignItems: "center", justifyContent: "space-between",
       gap: 10,
     },
     navTitle: {
-      fontSize: 21, fontWeight: 800, letterSpacing: "0.04em",
-      textTransform: "uppercase",
-      background: `linear-gradient(90deg, ${t.accent}, ${t.accent2})`,
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
+      display: "flex", alignItems: "center", gap: 8, minWidth: 0,
+      fontSize: 17, fontWeight: 700, letterSpacing: "0.01em", color: t.text,
       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
     },
-    page: { padding: "16px 16px calc(24px + env(safe-area-inset-bottom, 0px))" },
+    page: { padding: "8px 16px calc(24px + env(safe-area-inset-bottom, 0px))" },
     card: {
       background: t.surface,
-      border: `1px solid ${t.border}`,
-      boxShadow: t.cardShadow,
-      borderRadius: 14, overflow: "hidden", marginBottom: 12,
+      border: `1px solid ${t.glassLine}`,
+      boxShadow: t.elev1,
+      borderRadius: t.rCard, overflow: "hidden", marginBottom: 12,
     },
     iconBtn: {
-      background: t.surfaceElevated, border: `1px solid ${t.borderStrong}`,
-      borderRadius: 8, color: t.textSub,
-      fontSize: 15, padding: "6px 10px", cursor: "pointer",
-      fontFamily: "inherit", fontWeight: 700, flexShrink: 0,
+      background: t.tonal, border: "none",
+      borderRadius: t.rSm, color: t.text,
+      minWidth: 40, minHeight: 40, padding: "0 10px", cursor: "pointer",
+      fontFamily: "inherit", fontWeight: 600, flexShrink: 0,
+      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
     },
     primaryBtn: {
-      background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`,
-      color: "#111144", border: "none", borderRadius: 12,
-      fontSize: 15, fontWeight: 800, padding: "13px 16px",
-      cursor: "pointer", fontFamily: "inherit", letterSpacing: "0.02em",
-      width: "100%",
+      background: t.accent,
+      color: "#0A0A12", border: "none", borderRadius: 14,
+      fontSize: 15, fontWeight: 700, padding: "11px 16px", minHeight: 48,
+      cursor: "pointer", fontFamily: "inherit",
+      width: "100%", boxShadow: t.elev1,
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
     },
     secondaryBtn: {
-      background: t.surfaceElevated, color: t.text, border: `1px solid ${t.borderStrong}`,
-      borderRadius: 12, fontSize: 14, fontWeight: 700, padding: "12px 16px",
+      background: t.tonal, color: t.text, border: "none",
+      borderRadius: 14, fontSize: 15, fontWeight: 600, padding: "11px 14px", minHeight: t.touch,
       cursor: "pointer", fontFamily: "inherit", width: "100%",
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
     },
     input: {
       width: "100%", background: t.inputBg, border: `1px solid ${t.borderStrong}`,
-      borderRadius: 10, padding: "11px 13px", fontSize: 15, color: t.text,
+      borderRadius: 14, padding: "10px 12px", minHeight: t.touch, fontSize: 16, color: t.text,
       fontFamily: "inherit", outline: "none", boxSizing: "border-box",
     },
     label: {
-      fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase",
-      color: t.textSub, marginBottom: 6, display: "block",
+      fontSize: 12, fontWeight: 600, letterSpacing: "0.02em",
+      color: t.textSub, margin: "12px 0 6px", display: "block",
     },
     centered: {
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",

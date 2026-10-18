@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
-import { Card, TopBar, FullScreen, ScrollBody } from "./ui.jsx";
+import { Card, TopBar, FullScreen, ScrollBody, Icon } from "./ui.jsx";
 import * as storage from "./storage.js";
 import * as ties from "./teamTies.js";
 
@@ -19,11 +19,11 @@ function TieCard({ tie, onOpen, onDelete }) {
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); if (confirm(tr("tie.confirmDelete"))) onDelete(tie.id); }}
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, color: t.textSub, flexShrink: 0 }}
-            title={tr("common.delete")}
-          >🗑️</button>
+            style={{ background: "none", border: "none", cursor: "pointer", color: t.textSub, flexShrink: 0, minWidth: 44, minHeight: 44, display: "grid", placeItems: "center", margin: "-10px -10px 0 0" }}
+            aria-label={tr("common.delete")} title={tr("common.delete")}
+          ><Icon name="trash" size={19} /></button>
         </div>
-        <div style={{ fontSize: 26, fontWeight: 800, color: t.accent, marginTop: 8 }}>{score.wonA} : {score.wonB}</div>
+        <div style={{ fontSize: 30, fontWeight: 700, color: t.accent, marginTop: 8, fontFamily: t.fontScore }}>{score.wonA} : {score.wonB}</div>
         <div style={{ fontSize: 12, color: t.textSub, marginTop: 4 }}>
           {tr("tie.matchesPlayed", { played: score.playedCount, total: score.totalCount })}
         </div>
@@ -43,10 +43,10 @@ export default function TeamTieListPage({ onBack, onNewTie, onOpenTie }) {
     <FullScreen>
       <TopBar title={tr("tie.listTitle")} onBack={onBack} />
       <ScrollBody style={{ padding: 16 }}>
-        <button style={{ ...styles.primaryBtn, marginBottom: 16 }} onClick={onNewTie}>🏆 {tr("tie.newTie")}</button>
+        <button style={{ ...styles.primaryBtn, marginBottom: 16 }} onClick={onNewTie}><Icon name="trophy" size={21} />{tr("tie.newTie")}</button>
         {list.length === 0 ? (
           <div style={styles.centered}>
-            <span style={{ fontSize: 32 }}>🏆</span>
+            <span style={{ width: 72, height: 72, borderRadius: 24, background: t.tonal, color: t.accent, display: "grid", placeItems: "center" }}><Icon name="trophy" size={36} /></span>
             <span>{tr("tie.emptyTitle")}</span>
             <span style={{ fontSize: 12 }}>{tr("tie.emptyHint")}</span>
           </div>

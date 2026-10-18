@@ -1,8 +1,9 @@
 // Tennis Tracker v0.2.0 — ekran zakładania nowego meczu / zapisu ręcznego wyniku.
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useThemeCtx, SURFACES, themeForSurface } from "../theme.js";
 import { useLang, surfaceLabel } from "../i18n.js";
-import { Card, TopBar, FullScreen, ScrollBody, Chip } from "./ui.jsx";
+import { Card, TopBar, FullScreen, ScrollBody, Chip, Icon } from "./ui.jsx";
+import { pushBack } from "../backStack.js";
 import * as storage from "./storage.js";
 import { PRESETS, DEFAULT_PRESET_KEY } from "./scoringEngine.js";
 import { buildPlayerIndex, suggestOpponents, getFavoritePlayers, toggleFavoritePlayer } from "./players.js";
@@ -18,12 +19,11 @@ const DEPTHS = [
 function TabBtn({ active, onClick, children }) {
   const { t } = useThemeCtx();
   return (
-    <button onClick={onClick} style={{
-      flex: 1, padding: "10px 6px", background: "none", border: "none",
-      borderBottom: `2px solid ${active ? t.accent : "transparent"}`,
-      color: active ? t.text : t.textMuted, fontWeight: active ? 800 : 600,
-      fontSize: 13, textTransform: "uppercase", letterSpacing: "0.04em",
-      cursor: "pointer", fontFamily: "inherit",
+    <button onClick={onClick} aria-pressed={active} style={{
+      flex: 1, minHeight: 40, padding: "8px 6px", border: "none", borderRadius: 999,
+      background: active ? t.tonalStrong : "transparent",
+      color: active ? t.text : t.textSub, fontWeight: active ? 700 : 500,
+      fontSize: 14, cursor: "pointer", fontFamily: "inherit",
     }}>{children}</button>
   );
 }
@@ -36,13 +36,13 @@ function SurfaceTile({ surface, active, onClick }) {
   const stheme = themeForSurface(surface);
   return (
     <button onClick={onClick} style={{
-      flex: 1, padding: "16px 6px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
+      flex: 1, padding: "16px 6px", borderRadius: t.rMd, cursor: "pointer", fontFamily: "inherit", minHeight: 76,
       border: `2px solid ${active ? stheme.accent : t.borderStrong}`,
       background: active ? `${stheme.accent}22` : t.surfaceElevated,
       display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
     }}>
       <span style={{ width: 18, height: 18, borderRadius: "50%", background: stheme.accent, boxShadow: `0 0 10px ${stheme.accent}88` }} />
-      <span style={{ fontSize: 13, fontWeight: 800, color: active ? stheme.accent : t.text }}>{surfaceLabel(lang, surface)}</span>
+      <span style={{ fontSize: 14, fontWeight: 650, color: active ? stheme.accent : t.text }}>{surfaceLabel(lang, surface)}</span>
     </button>
   );
 }
@@ -57,9 +57,9 @@ function RulesTile({ preset, active, onClick }) {
       width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit",
       border: `2px solid ${active ? t.accent : t.borderStrong}`,
       background: active ? `${t.accent}18` : t.surfaceElevated,
-      borderRadius: 12, padding: 14, marginBottom: 10,
+      borderRadius: t.rMd, padding: 14, marginBottom: 10,
     }}>
-      <div style={{ fontSize: 15, fontWeight: 800, color: active ? t.accent : t.text }}>
+      <div style={{ fontSize: 15, fontWeight: 650, color: active ? t.accent : t.text }}>
         {active ? "✓ " : ""}{tr(preset.labelKey)}
       </div>
       <div style={{ fontSize: 12, color: t.textSub, marginTop: 6 }}>{preset.bulletKeys.map((k) => tr(k)).join(" · ")}</div>
@@ -86,11 +86,13 @@ function NameField({ label, value, onChange, favorites, onToggleFavorite, sugges
           onClick={() => onToggleFavorite(value)} disabled={!value.trim()}
           title={tr("setup.favoriteToggle")}
           style={{
-            width: 44, flexShrink: 0, borderRadius: 10, border: `1px solid ${t.borderStrong}`,
+            width: t.touch, flexShrink: 0, borderRadius: 14, border: `1px solid ${t.borderStrong}`,
             background: t.surfaceElevated, color: isFav ? t.accent : t.textMuted,
-            fontSize: 18, cursor: value.trim() ? "pointer" : "default", opacity: value.trim() ? 1 : 0.5,
+            display: "grid", placeItems: "center", padding: 0,
+            cursor: value.trim() ? "pointer" : "default", opacity: value.trim() ? 1 : 0.5,
           }}
-        >{isFav ? "★" : "☆"}</button>
+          aria-label={tr("setup.favoriteToggle")} aria-pressed={isFav}
+        ><Icon name={isFav ? "star" : "starOutline"} size={22} /></button>
       </div>
       <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 8 }}>
         {favorites.length > 0 && (
@@ -118,21 +120,24 @@ function NameField({ label, value, onChange, favorites, onToggleFavorite, sugges
 function DepthPickerModal({ onPick, onClose }) {
   const { t } = useThemeCtx();
   const { t: tr } = useLang();
+  useEffect(() => pushBack(onClose), []);
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 400, background: t.overlay,
-      display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
     }} onClick={onClose}>
-      <div style={{
-        background: t.bg, border: `1px solid ${t.border}`, borderRadius: 16,
-        maxWidth: 420, width: "100%", maxHeight: "80vh", overflowY: "auto", padding: 20,
+      <div role="dialog" aria-label={tr("setup.pickDepthTitle")} style={{
+        background: t.bg, border: `1px solid ${t.glassLine}`, borderRadius: `${t.rLg}px ${t.rLg}px 0 0`,
+        maxWidth: 480, width: "100%", maxHeight: "86vh", overflowY: "auto",
+        padding: "10px 16px calc(20px + env(safe-area-inset-bottom, 0px))", boxShadow: t.elevFloat,
       }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>{tr("setup.pickDepthTitle")}</div>
+        <div aria-hidden="true" style={{ width: 42, height: 5, borderRadius: 3, background: t.borderStrong, margin: "0 auto 14px" }} />
+        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>{tr("setup.pickDepthTitle")}</div>
         {DEPTHS.map((d) => (
           <Card key={d.key} style={{ cursor: "pointer" }}>
-            <div style={{ padding: 14 }} onClick={() => onPick(d.key)}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: t.secondarySoft }}>{tr(d.titleKey)}</div>
-              <div style={{ fontSize: 13, color: t.textSub, marginTop: 4 }}>{tr(d.descKey)}</div>
+            <div role="button" tabIndex={0} style={{ padding: "14px 16px", minHeight: 64 }} onClick={() => onPick(d.key)}>
+              <div style={{ fontSize: 17, fontWeight: 650, color: t.secondarySoft }}>{tr(d.titleKey)}</div>
+              <div style={{ fontSize: 13, color: t.textSub, marginTop: 4, lineHeight: 1.4 }}>{tr(d.descKey)}</div>
             </div>
           </Card>
         ))}
@@ -236,8 +241,8 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
       <TopBar title={isManual ? tr("setup.titleManual") : tr("setup.titleNew")} onBack={onCancel} />
       <div style={{
         display: "flex", alignItems: "center", gap: 8, padding: "8px 16px",
-        fontSize: 12, fontWeight: 700, color: surface ? t.accent : t.textMuted,
-        flexShrink: 0, borderBottom: `1px solid ${t.border}`,
+        fontSize: 13, fontWeight: 600, color: surface ? t.accent : t.textMuted,
+        flexShrink: 0,
       }}>
         <span style={{
           width: 10, height: 10, borderRadius: "50%",
@@ -248,13 +253,13 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
       </div>
       {tieContext && (
         <div style={{
-          padding: "8px 16px", fontSize: 12, fontWeight: 700, color: t.accent,
-          background: `${t.accent}14`, borderBottom: `1px solid ${t.border}`, flexShrink: 0,
+          margin: "0 16px 4px", padding: "8px 14px", fontSize: 13, fontWeight: 600, color: t.accent,
+          background: t.tonal, borderRadius: 14, flexShrink: 0, display: "flex", alignItems: "center", gap: 8,
         }}>
-          🏆 {tr("tie.matchBanner", { team1: tieContext.team1Name, team2: tieContext.team2Name })}
+          <Icon name="trophy" size={17} />{tr("tie.matchBanner", { team1: tieContext.team1Name, team2: tieContext.team2Name })}
         </div>
       )}
-      <div style={{ display: "flex", borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
+      <div style={{ display: "flex", gap: 6, padding: "8px 16px", flexShrink: 0 }}>
         <TabBtn active={tab === "players"} onClick={() => setTab("players")}>{tr("setup.tabPlayers")}</TabBtn>
         {!isManual && <TabBtn active={tab === "rules"} onClick={() => setTab("rules")}>{tr("setup.tabRules")}</TabBtn>}
         {isManual && <TabBtn active={tab === "wynik"} onClick={() => setTab("wynik")}>{tr("setup.tabResult")}</TabBtn>}
@@ -269,9 +274,7 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
               ))}
             </div>
             <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: t.text }}>
-                <input type="checkbox" checked={isDoubles} onChange={(e) => setIsDoubles(e.target.checked)} /> {tr("setup.doubles")}
-              </label>
+              <Chip label={tr("setup.doubles")} active={isDoubles} onClick={() => setIsDoubles((v) => !v)} />
             </div>
             <datalist id="known-players">
               {playerIndex.allNames.map((n) => <option key={n} value={n} />)}
@@ -315,18 +318,18 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
                 {!row.superTb && (
                   <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" value={row.tb} onChange={(e) => updateManualSet(i, { tb: e.target.value })} placeholder={tr("setup.tbPlaceholder")} title={tr("setup.tbTitle")} />
                 )}
-                <button onClick={() => removeManualSet(i)} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", fontSize: 16 }}>✕</button>
+                <button onClick={() => removeManualSet(i)} aria-label={tr("common.delete")} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", minWidth: 40, minHeight: 40, display: "grid", placeItems: "center" }}><Icon name="close" size={18} /></button>
               </div>
             ))}
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: t.textSub, marginBottom: 12 }}>
               <input type="checkbox" checked={manualSets[manualSets.length - 1]?.superTb || false} onChange={(e) => updateManualSet(manualSets.length - 1, { superTb: e.target.checked })} />
               {tr("setup.superTbCheckbox")}
             </label>
-            {manualSets.length < 5 && <button style={styles.secondaryBtn} onClick={addManualSet}>{tr("setup.addSet")}</button>}
+            {manualSets.length < 5 && <button style={styles.secondaryBtn} onClick={addManualSet}><Icon name="add" size={18} />{tr("setup.addSet")}</button>}
           </>
         )}
       </ScrollBody>
-      <div style={{ padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))", flexShrink: 0, borderTop: `1px solid ${t.border}` }}>
+      <div style={{ padding: "12px 16px calc(14px + env(safe-area-inset-bottom, 0px))", flexShrink: 0 }}>
         <button style={styles.primaryBtn} onClick={() => (isManual ? handleSaveManual() : setShowDepthModal(true))}>
           {isManual ? tr("setup.titleManual") : tr("setup.startTracking")}
         </button>

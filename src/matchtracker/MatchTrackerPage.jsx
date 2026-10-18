@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
-import { TopBar, FullScreen, BigButton, Chip, ScoreTile, TennisBall, ClockChip, ShareIcon } from "./ui.jsx";
+import { TopBar, FullScreen, BigButton, Chip, ScoreTile, TennisBall, ClockChip, ShareIcon, Icon } from "./ui.jsx";
 import * as storage from "./storage.js";
 import { computeScore, formatSetsString, buildSetRow, teamLabel, otherTeam, currentServerPlayerName, TEAM1, TEAM2 } from "./scoringEngine.js";
 import { shareMatch, buildLiveShareUrl } from "./shareLink.js";
@@ -115,10 +115,10 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
 
   const liveShareButton = (
     <button onClick={handleShareLive} title={tr("tracker.shareLiveTitle")} style={{
-      background: match.liveShareEnabled ? `${t.danger}22` : t.surfaceElevated,
-      border: `1px solid ${match.liveShareEnabled ? t.danger : t.borderStrong}`,
-      color: match.liveShareEnabled ? t.danger : t.textSub,
-      borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800,
+      background: match.liveShareEnabled ? `${t.danger}26` : t.tonal,
+      border: "none",
+      color: match.liveShareEnabled ? "#ff8a8a" : t.text,
+      borderRadius: 999, padding: "0 14px", minHeight: 40, fontSize: 13, fontWeight: 650,
       cursor: "pointer", fontFamily: "inherit", flexShrink: 0, whiteSpace: "nowrap",
       display: "flex", alignItems: "center", gap: 5,
     }}>
@@ -218,17 +218,17 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   // punkcie między 4 osobami nie jest tu liczona, patrz scoringEngine.js).
   const servingPlayer = currentServerPlayerName(match, score);
   const Header = (
-    <div style={{ background: "transparent", flexShrink: 0, padding: "10px 14px 14px", borderBottom: `1px solid ${t.border}` }}>
+    <div style={{ background: "transparent", flexShrink: 0, padding: "12px 16px 14px" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
         {[
           { team: TEAM1, name: name1 },
           { team: TEAM2, name: name2 },
         ].map(({ team, name }, rowIdx) => (
           <div key={team} style={{
-            display: "flex", alignItems: "center", gap: 8, padding: "10px 14px",
-            background: score.server === team && !score.matchWinner ? `${t.accent}18` : t.surfaceElevated,
-            border: `1px solid ${score.server === team && !score.matchWinner ? `${t.accent}55` : t.border}`,
-            borderRadius: 12,
+            display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", minHeight: 52,
+            background: score.server === team && !score.matchWinner ? t.tonal : t.surface,
+            border: `1px solid ${score.server === team && !score.matchWinner ? `${t.accent}66` : t.glassLine}`,
+            borderRadius: t.rMd,
           }}>
             <span style={{ flex: 1, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               {match.isDoubles ? (
@@ -294,11 +294,11 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     : stage.name === "rally" ? tr("tracker.stage.rally")
     : tr("tracker.stage.pointEnd");
   const TopRow = (
-    <div style={{ display: "flex", alignItems: "center", padding: "6px 14px", justifyContent: "space-between" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <div style={{ display: "flex", alignItems: "center", padding: "2px 16px 6px", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         {liveShareButton}
         {!isBasic && (
-          <span style={{ fontSize: 12, fontWeight: 800, color: t.textMuted, textTransform: "uppercase" }}>
+          <span style={{ fontSize: 12, fontWeight: 650, color: t.textSub, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
             {stageLabel}
           </span>
         )}
@@ -309,11 +309,11 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         )}
       </div>
       <button onClick={handleUndo} disabled={match.pointLog.length === 0} style={{
-        background: t.surfaceElevated, border: `1px solid ${match.pointLog.length ? t.accent + "55" : t.borderStrong}`,
-        color: match.pointLog.length ? t.accent : t.textMuted, borderRadius: 8, padding: "6px 12px",
-        fontWeight: 800, fontSize: 12, cursor: match.pointLog.length ? "pointer" : "default", fontFamily: "inherit",
-        display: "flex", alignItems: "center", gap: 5,
-      }}>↩ {tr("common.undo")}</button>
+        background: match.pointLog.length ? t.tonal : "transparent", border: "none",
+        color: match.pointLog.length ? t.text : t.textMuted, borderRadius: 999, padding: "0 14px", minHeight: 40,
+        fontWeight: 650, fontSize: 13, cursor: match.pointLog.length ? "pointer" : "default", fontFamily: "inherit",
+        display: "flex", alignItems: "center", gap: 6, opacity: match.pointLog.length ? 1 : 0.6,
+      }}><Icon name="undo" size={18} />{tr("common.undo")}</button>
     </div>
   );
 
@@ -327,7 +327,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={matchClock} />
         {Header}
         {TopRow}
-        <div style={{ flex: 1, minHeight: 0, padding: 16, display: "flex", flexDirection: "row", gap: 12 }}>
+        <div style={{ flex: 1, minHeight: 0, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "row", gap: 12 }}>
           <BigButton label={tr("tracker.pointFor", { name: name1 })} color={t.secondary} onClick={() => commitPoint(TEAM1)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
           <BigButton label={tr("tracker.pointFor", { name: name2 })} color={t.secondarySoft} onClick={() => commitPoint(TEAM2)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
         </div>
@@ -370,7 +370,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   let body;
   if (stage.name === "serve1") {
     body = (
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: 16 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ flex: 1, display: "flex", gap: 12 }}>
           <BigButton label={tr("tracker.ace")} onClick={() => handleAce("1st")} color={t.success} style={{ flex: 1, minHeight: 0, height: "100%" }} />
           <BigButton label={tr("tracker.serveFault")} onClick={handleFault1} color="#7a7fb0" style={{ flex: 1, minHeight: 0, height: "100%" }} />
@@ -380,7 +380,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     );
   } else if (stage.name === "serve2") {
     body = (
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: 16 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ flex: 1, display: "flex", gap: 12 }}>
           <BigButton label={tr("tracker.returnWinner")} onClick={() => handleReturnWinner("2nd")} color={t.secondarySoft} style={{ flex: 1, minHeight: 0, height: "100%" }} />
           <BigButton label={tr("tracker.ace")} onClick={() => handleAce("2nd")} color={t.success} style={{ flex: 1, minHeight: 0, height: "100%" }} />
@@ -415,7 +415,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
       { key: "unforcedError", label: tr("tracker.unforcedError"), color: t.danger },
     ];
     body = (
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 10, padding: 16 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 10, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
         {isAdvanced && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
             <div style={{ display: "flex", gap: 8 }}>
