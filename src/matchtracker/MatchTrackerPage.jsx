@@ -271,6 +271,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
           <ScoreBoard
             style={scoreStyle} labels={[score.game.a, score.game.b]} server={score.game.server}
             tiebreak={score.game.isTiebreak} gameEnded={gameEnded}
+            tbTarget={score.game.isSuperTiebreak ? rules.finalSetSuperTiebreakTo : rules.tiebreakTo}
           />
         ) : <span style={{ fontSize: 22, fontWeight: 800, color: t.accent }}>—</span>}
       </div>
