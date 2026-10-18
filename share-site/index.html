@@ -74,11 +74,11 @@
   .score-tile::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(255,255,255,0.06), transparent 55%); }
   .score-tile span{ position:relative; z-index:1; color:var(--accent); font-weight:800; font-size:32px; line-height:1; font-family:var(--score); text-shadow:0 1px 2px rgba(0,0,0,0.5); }
   .serve-ball{
-    position:absolute; top:50%; width:16px; height:16px; z-index:3; pointer-events:none;
+    position:absolute; top:50%; width:22px; height:22px; z-index:3; pointer-events:none;
     animation: ballBounce 0.9s ease-in-out infinite;
   }
-  .serve-ball.left{ left:-22px; }
-  .serve-ball.right{ right:-22px; }
+  .serve-ball.left{ left:-28px; }
+  .serve-ball.right{ right:-28px; }
   @keyframes ballBounce{
     0%,100%{ transform: translateY(-50%); }
     50%{ transform: translateY(calc(-50% - 6px)); }
@@ -180,12 +180,9 @@
     return decodeURIComponent(escape(atob(b64)));
   }
 
-  // Ta sama piłeczka (SVG) co TennisBall w aplikacji — spójny wygląd zamiast
+  // Ta sama piłeczka (logo D, kula z kropek) co TennisBall w aplikacji — spójny wygląd zamiast
   // emoji 🎾, które różnie renderuje się na różnych systemach.
-  const BALL_SVG = '<svg width="16" height="16" viewBox="0 0 24 24">' +
-    '<circle cx="12" cy="12" r="10.5" fill="#d6f24c" stroke="#8caa1f" stroke-width="1" />' +
-    '<path d="M2.2 8.2 Q12 3, 21.8 8.2" stroke="#fff" stroke-width="1.6" fill="none" />' +
-    '<path d="M2.2 15.8 Q12 21, 21.8 15.8" stroke="#fff" stroke-width="1.6" fill="none" /></svg>';
+  const BALL_SVG = "<svg width=\"22\" height=\"22\" viewBox=\"0 0 256 256\" aria-hidden=\"true\"><g fill=\"#C6FF00\"><circle cx=\"97\" cy=\"20.61\" r=\"8.0\"/><circle cx=\"128\" cy=\"20.61\" r=\"8.5\"/><circle cx=\"159\" cy=\"20.61\" r=\"8.0\"/><circle cx=\"50.5\" cy=\"47.46\" r=\"8.0\"/><circle cx=\"81.5\" cy=\"47.46\" r=\"9.8\"/><circle cx=\"112.5\" cy=\"47.46\" r=\"10.7\"/><circle cx=\"143.5\" cy=\"47.46\" r=\"10.7\"/><circle cx=\"174.5\" cy=\"47.46\" r=\"9.8\"/><circle cx=\"205.5\" cy=\"47.46\" r=\"8.0\"/><circle cx=\"35\" cy=\"74.31\" r=\"8.5\"/><circle cx=\"97\" cy=\"74.31\" r=\"12.0\"/><circle cx=\"128\" cy=\"74.31\" r=\"12.5\"/><circle cx=\"159\" cy=\"74.31\" r=\"12.0\"/><circle cx=\"221\" cy=\"74.31\" r=\"8.5\"/><circle cx=\"19.5\" cy=\"101.15\" r=\"8.0\"/><circle cx=\"50.5\" cy=\"101.15\" r=\"10.7\"/><circle cx=\"112.5\" cy=\"101.15\" r=\"13.4\"/><circle cx=\"143.5\" cy=\"101.15\" r=\"13.4\"/><circle cx=\"205.5\" cy=\"101.15\" r=\"10.7\"/><circle cx=\"236.5\" cy=\"101.15\" r=\"8.0\"/><circle cx=\"35\" cy=\"128\" r=\"9.8\"/><circle cx=\"66\" cy=\"128\" r=\"12.0\"/><circle cx=\"97\" cy=\"128\" r=\"13.4\"/><circle cx=\"128\" cy=\"128\" r=\"13.8\"/><circle cx=\"159\" cy=\"128\" r=\"13.4\"/><circle cx=\"190\" cy=\"128\" r=\"12.0\"/><circle cx=\"221\" cy=\"128\" r=\"9.8\"/><circle cx=\"19.5\" cy=\"154.85\" r=\"8.0\"/><circle cx=\"50.5\" cy=\"154.85\" r=\"10.7\"/><circle cx=\"112.5\" cy=\"154.85\" r=\"13.4\"/><circle cx=\"143.5\" cy=\"154.85\" r=\"13.4\"/><circle cx=\"205.5\" cy=\"154.85\" r=\"10.7\"/><circle cx=\"236.5\" cy=\"154.85\" r=\"8.0\"/><circle cx=\"35\" cy=\"181.69\" r=\"8.5\"/><circle cx=\"97\" cy=\"181.69\" r=\"12.0\"/><circle cx=\"128\" cy=\"181.69\" r=\"12.5\"/><circle cx=\"159\" cy=\"181.69\" r=\"12.0\"/><circle cx=\"221\" cy=\"181.69\" r=\"8.5\"/><circle cx=\"50.5\" cy=\"208.54\" r=\"8.0\"/><circle cx=\"81.5\" cy=\"208.54\" r=\"9.8\"/><circle cx=\"112.5\" cy=\"208.54\" r=\"10.7\"/><circle cx=\"143.5\" cy=\"208.54\" r=\"10.7\"/><circle cx=\"174.5\" cy=\"208.54\" r=\"9.8\"/><circle cx=\"205.5\" cy=\"208.54\" r=\"8.0\"/><circle cx=\"97\" cy=\"235.39\" r=\"8.0\"/><circle cx=\"128\" cy=\"235.39\" r=\"8.5\"/><circle cx=\"159\" cy=\"235.39\" r=\"8.0\"/></g></svg>";
 
   function esc(s) {
     const d = document.createElement("div");

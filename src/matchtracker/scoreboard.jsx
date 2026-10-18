@@ -308,8 +308,8 @@ function ServeBall({ side }) {
   return (
     <span style={{
       position: "absolute", top: "50%", zIndex: 3, pointerEvents: "none",
-      animation: "ballBounce 0.9s ease-in-out infinite", ...(side === "left" ? { left: -22 } : { right: -22 }),
-    }}><TennisBall size={16} /></span>
+      animation: "ballBounce 0.9s ease-in-out infinite", ...(side === "left" ? { left: -26 } : { right: -26 }),
+    }}><TennisBall size={22} /></span>
   );
 }
 

@@ -104,9 +104,7 @@ export default function MatchListPage({ onNewMatch, onSaveResult, onOpenMatch })
 
       {matches.length === 0 ? (
         <div style={styles.centered}>
-          <span style={{
-            width: 112, height: 112, borderRadius: 32, background: t.tonal, display: "grid", placeItems: "center",
-          }}><img src={ballDots} width={80} height={80} alt="" /></span>
+          <img src={ballDots} width={120} height={120} alt="" />
           <span style={{ fontSize: 16, fontWeight: 650, color: t.text }}>{tr("list.emptyTitle")}</span>
           <span style={{ fontSize: 13, maxWidth: 260 }}>{tr("list.emptyHint")}</span>
         </div>

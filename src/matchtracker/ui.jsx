@@ -7,15 +7,26 @@ import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
 import { formatDuration } from "./time.js";
 
-// Ikonka piłki tenisowej narysowana w SVG — stałe, spójne renderowanie na
-// każdym urządzeniu (emoji 🎾 wygląda różnie zależnie od systemu/producenta,
-// bywa mylona z rakietką).
-export function TennisBall({ size = 14 }) {
+// Logo piłki "D" (kula z kropek, szew jako pusta ścieżka) w kolorze akcentu
+// ikony aplikacji. Pełny raster dla dużych rozmiarów, a przy małych (znacznik
+// serwującego) rzadsza siatka z grubszymi kropkami — inaczej kropki
+// zlewałyby się w szarą plamę.
+import ballDotsRaw from "../assets/ball-dots.svg?raw";
+const DOTS_FULL = [...ballDotsRaw.matchAll(/cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"/g)].map((m) => [+m[1], +m[2], +m[3]]);
+const ROW_YS = [...new Set(DOTS_FULL.map((d) => d[1]))].sort((a, b) => a - b);
+const DOTS_COARSE = DOTS_FULL.filter(([x, y]) => {
+  const row = ROW_YS.indexOf(y);
+  const c = Math.round((x - 19.5) / 7.75);
+  return row % 2 === 0 && c % 4 === (row % 4 === 0 ? 2 : 0);
+}).map(([x, y, r]) => [x, y, Math.min(r * 2, 14)]);
+export const BALL_LIME = "#C6FF00";
+export function TennisBall({ size = 18 }) {
+  const dots = size >= 48 ? DOTS_FULL : DOTS_COARSE;
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-      <circle cx="12" cy="12" r="10.5" fill="#d6f24c" stroke="#8caa1f" strokeWidth="1" />
-      <path d="M2.2 8.2 Q12 3, 21.8 8.2" stroke="#fff" strokeWidth="1.6" fill="none" />
-      <path d="M2.2 15.8 Q12 21, 21.8 15.8" stroke="#fff" strokeWidth="1.6" fill="none" />
+    <svg width={size} height={size} viewBox="0 0 256 256" style={{ flexShrink: 0 }} aria-hidden="true">
+      <g fill={BALL_LIME}>
+        {dots.map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} />)}
+      </g>
     </svg>
   );
 }
@@ -203,7 +214,7 @@ export function ScoreTile({ value, size = "lg", serving = false, servingSide = "
           animation: "ballBounce 0.9s ease-in-out infinite",
           ...(servingSide === "left" ? { left: -20 } : { right: -20 }),
         }}>
-          <TennisBall size={14} />
+          <TennisBall size={20} />
         </span>
       )}
       <div style={{

@@ -247,10 +247,10 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
                     <span key={nm} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                       {i > 0 && <span style={{ color: t.textMuted, fontWeight: 400 }}> / </span>}
                       {nm}
-                      {score.server === team && !score.matchWinner && servingPlayer === nm && <TennisBall size={12} />}
+                      {score.server === team && !score.matchWinner && servingPlayer === nm && <TennisBall size={20} />}
                     </span>
                   ))}
-                  {score.server === team && !score.matchWinner && !servingPlayer && <TennisBall size={12} />}
+                  {score.server === team && !score.matchWinner && !servingPlayer && <TennisBall size={20} />}
                 </>
               ) : (
                 <>{name} {score.server === team && !score.matchWinner && <TennisBall />}</>
