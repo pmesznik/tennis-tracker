@@ -17,12 +17,19 @@ export function normName(n) {
     .toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-function singlesNames(m) {
+// Strony meczu jako tablice nazwisk: single (po jednym nazwisku, bez debla)
+// albo debel (flaga isDoubles). Inny typ meczu daje null i jest pomijany.
+export function matchSides(m, mode = "singles") {
   const a = (m.team1?.names || []).filter(Boolean);
   const b = (m.team2?.names || []).filter(Boolean);
-  if (m.isDoubles || a.length !== 1 || b.length !== 1) return null;
-  return [a[0], b[0]];
+  if (mode === "doubles") return m.isDoubles && a.length >= 2 && b.length >= 2 ? [a, b] : null;
+  return !m.isDoubles && a.length === 1 && b.length === 1 ? [a, b] : null;
 }
+
+const labelOf = (names) => names.join(" / ");
+// Klucz pary niezależny od kolejności zawodników i zapisu nazwisk.
+export const teamKey = (names) => names.map(normName).sort().join("|");
+const keyOfLabel = (label) => teamKey(String(label).split(" / "));
 
 // Sety meczu jako [{a,b,isSuperTiebreak,tiebreak?}] oraz zwycięzca ("team1"/"team2"/null).
 function matchSets(m) {
@@ -37,14 +44,14 @@ function matchSets(m) {
   return { sets: sc.sets, winner: sc.matchWinner };
 }
 
-// Nazwiska zawodników występujących w ukończonych singlach, z liczbą meczów.
-export function listH2HPlayers(matches) {
+// Zawodnicy występujący w ukończonych meczach danego typu, z liczbą meczów.
+export function listH2HPlayers(matches, mode = "singles") {
   const map = new Map();
   for (const m of matches) {
     if (m.status !== "completed") continue;
-    const names = singlesNames(m);
-    if (!names) continue;
-    for (const n of names) {
+    const sides = matchSides(m, mode);
+    if (!sides) continue;
+    for (const n of sides.flat()) {
       const k = normName(n);
       const cur = map.get(k) || { name: n, key: k, count: 0 };
       cur.count++;
@@ -54,20 +61,53 @@ export function listH2HPlayers(matches) {
   return [...map.values()].sort((x, y) => y.count - x.count || x.name.localeCompare(y.name));
 }
 
-// Rywale danego zawodnika (z liczbą wspólnych meczów).
-export function listH2HOpponents(matches, name) {
+// Rywale danego zawodnika (single: zawodnicy, debel: pary rywali).
+export function listH2HOpponents(matches, name, mode = "singles") {
   const key = normName(name);
   const map = new Map();
   for (const m of matches) {
     if (m.status !== "completed") continue;
-    const names = singlesNames(m);
-    if (!names) continue;
-    const [n1, n2] = names;
-    let opp = null;
-    if (normName(n1) === key) opp = n2; else if (normName(n2) === key) opp = n1;
+    const sides = matchSides(m, mode);
+    if (!sides) continue;
+    const opp = sides[0].some((n) => normName(n) === key) ? sides[1] : sides[1].some((n) => normName(n) === key) ? sides[0] : null;
     if (!opp) continue;
-    const k = normName(opp);
-    const cur = map.get(k) || { name: opp, key: k, count: 0 };
+    const k = teamKey(opp);
+    const cur = map.get(k) || { name: labelOf(opp), key: k, count: 0 };
+    cur.count++;
+    map.set(k, cur);
+  }
+  return [...map.values()].sort((x, y) => y.count - x.count || x.name.localeCompare(y.name));
+}
+
+// Pary deblowe (bez względu na kolejność zawodników) z liczbą meczów.
+export function listH2HTeams(matches) {
+  const map = new Map();
+  for (const m of matches) {
+    if (m.status !== "completed") continue;
+    const sides = matchSides(m, "doubles");
+    if (!sides) continue;
+    for (const names of sides) {
+      const k = teamKey(names);
+      const cur = map.get(k) || { name: labelOf(names), key: k, count: 0 };
+      cur.count++;
+      map.set(k, cur);
+    }
+  }
+  return [...map.values()].sort((x, y) => y.count - x.count || x.name.localeCompare(y.name));
+}
+
+// Rywalne pary danej pary deblowej.
+export function listH2HTeamOpponents(matches, teamLabel) {
+  const key = keyOfLabel(teamLabel);
+  const map = new Map();
+  for (const m of matches) {
+    if (m.status !== "completed") continue;
+    const sides = matchSides(m, "doubles");
+    if (!sides) continue;
+    const opp = teamKey(sides[0]) === key ? sides[1] : teamKey(sides[1]) === key ? sides[0] : null;
+    if (!opp) continue;
+    const k = teamKey(opp);
+    const cur = map.get(k) || { name: labelOf(opp), key: k, count: 0 };
     cur.count++;
     map.set(k, cur);
   }
@@ -81,7 +121,7 @@ const zeroSide = () => ({
   bpOpp: 0, bpConv: 0, // break pointy jako returner: szanse / wykorzystane
 });
 
-function aggregate(matches, pick) {
+function aggregate(matches, mode, pick) {
   const a = zeroSide(), b = zeroSide();
   const list = [];
   const bySurface = {};
@@ -94,9 +134,9 @@ function aggregate(matches, pick) {
     .sort((x, y) => String(x.date || "").localeCompare(String(y.date || "")) || String(x.createdAt || "").localeCompare(String(y.createdAt || "")));
 
   for (const m of sorted) {
-    const names = singlesNames(m);
-    if (!names) continue;
-    const aIsTeam1 = pick(normName(names[0]), normName(names[1]));
+    const sides = matchSides(m, mode);
+    if (!sides) continue;
+    const aIsTeam1 = pick(sides[0], sides[1]);
     if (aIsTeam1 === null) continue;
 
     totalMatches++;
@@ -146,8 +186,8 @@ function aggregate(matches, pick) {
     const bs = bySurface[surf] || (bySurface[surf] = { a: 0, b: 0 });
     if (winner === mine) bs.a++; else if (winner === theirs) bs.b++;
 
-    const oppName = aIsTeam1 ? names[1] : names[0];
-    const ok = normName(oppName);
+    const oppName = labelOf(aIsTeam1 ? sides[1] : sides[0]);
+    const ok = teamKey(String(oppName).split(" / "));
     const orec = opponents.get(ok) || { name: oppName, key: ok, played: 0, won: 0, lost: 0 };
     orec.played++;
     if (winner === mine) orec.won++; else if (winner === theirs) orec.lost++;
@@ -179,24 +219,29 @@ function aggregate(matches, pick) {
 }
 
 /**
- * Bilans spotkań dwóch zawodników. Zwraca stronę `a` i `b` w orientacji
- * "zawodnik A kontra zawodnik B" niezależnie od tego, kto był team1/team2.
+ * Bilans spotkań dwóch zawodników (single) albo dwóch par (debel, nazwy par
+ * jako "A / B"). Strony `a` i `b` są w orientacji "A kontra B" niezależnie od
+ * tego, kto był team1/team2.
  */
-export function computeH2H(matches, nameA, nameB) {
-  const ka = normName(nameA), kb = normName(nameB);
-  const r = aggregate(matches, (k1, k2) => (k1 === ka && k2 === kb ? true : k1 === kb && k2 === ka ? false : null));
-  return { nameA, nameB, ...r };
+export function computeH2H(matches, nameA, nameB, mode = "singles") {
+  const [ka, kb] = [keyOfLabel(nameA), keyOfLabel(nameB)];
+  const r = aggregate(matches, mode, (s1, s2) => {
+    const k1 = teamKey(s1), k2 = teamKey(s2);
+    return k1 === ka && k2 === kb ? true : k1 === kb && k2 === ka ? false : null;
+  });
+  return { nameA, nameB, mode, ...r };
 }
 
 /**
- * Statystyki jednego zawodnika ze wszystkich jego ukończonych singli: `a` to
- * on, `b` to suma jego rywali (statystyki "przeciwko"). `opponents` zawiera
- * bilans z każdym rywalem z osobna.
+ * Statystyki jednego zawodnika ze wszystkich jego ukończonych meczów danego
+ * typu: `a` to jego strona (w deblu: z dowolnym partnerem), `b` to suma
+ * rywali. `opponents` zawiera bilans z każdym rywalem (parą) z osobna.
  */
-export function computePlayerStats(matches, name) {
+export function computePlayerStats(matches, name, mode = "singles") {
   const k = normName(name);
-  const r = aggregate(matches, (k1, k2) => (k1 === k ? true : k2 === k ? false : null));
-  return { name, ...r };
+  const r = aggregate(matches, mode, (s1, s2) =>
+    s1.some((n) => normName(n) === k) ? true : s2.some((n) => normName(n) === k) ? false : null);
+  return { name, mode, ...r };
 }
 
 export const pct = (won, total) => (total ? Math.round((won / total) * 100) : null);

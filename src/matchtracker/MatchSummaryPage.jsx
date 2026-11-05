@@ -11,6 +11,7 @@ import { removeMatchFromTie } from "./teamTies.js";
 import { formatDuration, longestPoint, averagePointDurationMs } from "./time.js";
 import { computeStats, computeBreakPoints, flowSeries } from "./stats.js";
 import { StatRow, Donut, FlowChart, sideColors } from "./charts.jsx";
+import { renderStatsPng, shareStatsPng } from "./statsImage.js";
 
 const STAT_ROWS = [
   ["aces", "stat.aces"],
@@ -57,6 +58,14 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
   const totalDurationMs = hasTiming ? (match.endedAt ?? Date.now()) - match.startedAt : null;
   const longest = hasTiming ? longestPoint(match.pointLog, match.startedAt) : null;
   const avgPointMs = hasTiming ? averagePointDurationMs(match.pointLog, match.startedAt) : null;
+
+  const handleShareImage = () => {
+    const rows = [{ label: tr("summary.pointsShare"), a: ptsA, b: ptsB }];
+    if (bp) rows.push({ label: tr("summary.bpConverted"), a: bp.team1.opp ? bp.team1.conv / bp.team1.opp : 0, b: bp.team2.opp ? bp.team2.conv / bp.team2.opp : 0, aText: `${bp.team1.conv}/${bp.team1.opp}`, bText: `${bp.team2.conv}/${bp.team2.opp}` });
+    for (const [key, labelKey] of STAT_ROWS) rows.push({ label: tr(labelKey), a: stats.team1[key], b: stats.team2[key], higherIsBetter: key !== "doubleFaults" && key !== "unforcedErrors" });
+    const png = renderStatsPng({ title: tr("summary.title"), nameA: name1, nameB: name2, scoreA: score ? score.setsWonA : 0, scoreB: score ? score.setsWonB : 0, subtitle: setsRow.join("  "), rows }, t);
+    shareStatsPng(png, "tennis-tracker-mecz.png", `${name1} – ${name2}: ${setsRow.join(" ")}`);
+  };
 
   const handleDelete = () => {
     if (!confirm(tr("common.confirmDeleteMatch"))) return;
@@ -169,9 +178,14 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
               onClick={() => shareMatch(`${name1} – ${name2}: ${setsRow.join(" ")}`, buildProShareUrl(match, setsRow))}
             ><ShareIcon size={15} /> {tr("summary.shareProResult")}</button>
           )}
-          {onOpenH2H && !match.isDoubles && match.team1.names.length === 1 && match.team2.names.length === 1 && (
-            <button style={styles.secondaryBtn} onClick={() => onOpenH2H(match.team1.names[0], match.team2.names[0])}>
+          {onOpenH2H && match.team1.names.length >= 1 && match.team2.names.length >= 1 && (
+            <button style={styles.secondaryBtn} onClick={() => onOpenH2H(match.team1.names.join(" / "), match.team2.names.join(" / "), !!match.isDoubles)}>
               <Icon name="stats" size={19} />{tr("h2h.fromSummary")}
+            </button>
+          )}
+          {hasPointDetail && stats && (
+            <button style={styles.secondaryBtn} onClick={handleShareImage}>
+              <Icon name="image" size={19} />{tr("summary.shareImage")}
             </button>
           )}
           <button style={{ ...styles.secondaryBtn, background: `${t.danger}1c`, color: t.danger }} onClick={handleDelete}><Icon name="trash" size={19} />{tr("common.deleteMatch")}</button>

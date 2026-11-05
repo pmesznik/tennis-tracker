@@ -31,9 +31,13 @@ jobs:
       - name: Sync Capacitor Android project
         run: npx cap sync android
 
+      - name: Read app version
+        id: ver
+        run: echo "name=$(node -p "require('fs').readFileSync('src/version.js','utf8').match(/APP_VERSION = \"([^\"]+)\"/)[1]")" >> "$GITHUB_OUTPUT"
+
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon -PappVersionCode=${{ github.run_number }}
+        run: ./gradlew assembleDebug --no-daemon -PappVersionCode=${{ github.run_number }} -PappVersionName=${{ steps.ver.outputs.name }}
 
       - name: Rename APK with version
         run: |
@@ -50,5 +54,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
-          name: Tennis Tracker v${{ github.run_number }}
+          name: Tennis Tracker v${{ github.run_number }} (${{ steps.ver.outputs.name }})
           files: out/tennis-tracker-v${{ github.run_number }}.apk

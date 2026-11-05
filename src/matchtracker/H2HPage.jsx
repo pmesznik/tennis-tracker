@@ -1,12 +1,16 @@
-// Tennis Tracker — statystyki zawodnika i pary zawodników (mecze, sety, gemy,
-// punkty, break pointy) z wykresami i udostępnianiem.
+// Tennis Tracker — statystyki zawodnika i pary (single i debel): mecze, sety,
+// gemy, punkty, break pointy, z wykresami i udostępnianiem (link, tekst, obraz).
 import { useMemo, useState } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang, surfaceLabel } from "../i18n.js";
 import { TopBar, FullScreen, ScrollBody, Card, ShareIcon, Icon } from "./ui.jsx";
 import * as storage from "./storage.js";
-import { listH2HPlayers, listH2HOpponents, computeH2H, computePlayerStats, pct, h2hText, normName } from "./h2h.js";
+import {
+  listH2HPlayers, listH2HOpponents, listH2HTeams, listH2HTeamOpponents,
+  computeH2H, computePlayerStats, pct, h2hText, normName, teamKey,
+} from "./h2h.js";
 import { shareMatch, buildH2HShareUrl } from "./shareLink.js";
+import { renderStatsPng, shareStatsPng } from "./statsImage.js";
 import { StatRow, Donut, FormStrip, MiniBar, sideColors } from "./charts.jsx";
 
 const pctText = (w, tot) => { const p = pct(w, tot); return p == null ? "–" : `${p}% (${w}/${tot})`; };
@@ -15,6 +19,33 @@ const rate = (w, tot) => (tot ? w / tot : 0);
 function Title({ children }) {
   const { t } = useThemeCtx();
   return <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{children}</div>;
+}
+
+// Wiersze porównania (te same na ekranie i na obrazie do wysłania).
+export function h2hRows(h, tr) {
+  const { a, b } = h;
+  const rows = [
+    { label: tr("h2h.matches"), a: a.matchesWon, b: b.matchesWon },
+    { label: tr("h2h.sets"), a: a.setsWon, b: b.setsWon },
+    { label: tr("h2h.games"), a: a.gamesWon, b: b.gamesWon },
+  ];
+  if (h.detailedMatches > 0) {
+    rows.push(
+      { label: tr("h2h.points"), a: a.pointsWon, b: b.pointsWon },
+      { label: tr("h2h.servePct"), a: rate(a.servePointsWon, a.servePointsTotal), b: rate(b.servePointsWon, b.servePointsTotal),
+        aText: pctText(a.servePointsWon, a.servePointsTotal), bText: pctText(b.servePointsWon, b.servePointsTotal) },
+      { label: tr("h2h.returnPct"), a: rate(a.returnPointsWon, a.returnPointsTotal), b: rate(b.returnPointsWon, b.returnPointsTotal),
+        aText: pctText(a.returnPointsWon, a.returnPointsTotal), bText: pctText(b.returnPointsWon, b.returnPointsTotal) },
+      { label: tr("h2h.bpConverted"), a: rate(a.bpConv, a.bpOpp), b: rate(b.bpConv, b.bpOpp), aText: `${a.bpConv}/${a.bpOpp}`, bText: `${b.bpConv}/${b.bpOpp}` },
+      { label: tr("h2h.bpSaved"), a: rate(b.bpOpp - b.bpConv, b.bpOpp), b: rate(a.bpOpp - a.bpConv, a.bpOpp),
+        aText: `${b.bpOpp - b.bpConv}/${b.bpOpp}`, bText: `${a.bpOpp - a.bpConv}/${a.bpOpp}` },
+      { label: tr("stat.aces"), a: a.aces, b: b.aces },
+      { label: tr("stat.doubleFaults"), a: a.doubleFaults, b: b.doubleFaults, higherIsBetter: false },
+      { label: tr("stat.winners"), a: a.winners, b: b.winners },
+      { label: tr("stat.unforcedErrors"), a: a.unforcedErrors, b: b.unforcedErrors, higherIsBetter: false },
+    );
+  }
+  return rows;
 }
 
 // Wspólny blok statystyk: `h` z computeH2H albo computePlayerStats, `nameA` i
@@ -55,26 +86,7 @@ function StatsBlock({ h, nameA, nameB, playerMode }) {
       </Card>
 
       <Card>
-        <StatRow label={tr("h2h.matches")} a={a.matchesWon} b={b.matchesWon} />
-        <StatRow label={tr("h2h.sets")} a={a.setsWon} b={b.setsWon} />
-        <StatRow label={tr("h2h.games")} a={a.gamesWon} b={b.gamesWon} />
-        {detailed && (
-          <>
-            <StatRow label={tr("h2h.points")} a={a.pointsWon} b={b.pointsWon} />
-            <StatRow label={tr("h2h.servePct")} a={rate(a.servePointsWon, a.servePointsTotal)} b={rate(b.servePointsWon, b.servePointsTotal)}
-              aText={pctText(a.servePointsWon, a.servePointsTotal)} bText={pctText(b.servePointsWon, b.servePointsTotal)} />
-            <StatRow label={tr("h2h.returnPct")} a={rate(a.returnPointsWon, a.returnPointsTotal)} b={rate(b.returnPointsWon, b.returnPointsTotal)}
-              aText={pctText(a.returnPointsWon, a.returnPointsTotal)} bText={pctText(b.returnPointsWon, b.returnPointsTotal)} />
-            <StatRow label={tr("h2h.bpConverted")} a={rate(a.bpConv, a.bpOpp)} b={rate(b.bpConv, b.bpOpp)}
-              aText={`${a.bpConv}/${a.bpOpp}`} bText={`${b.bpConv}/${b.bpOpp}`} />
-            <StatRow label={tr("h2h.bpSaved")} a={rate(b.bpOpp - b.bpConv, b.bpOpp)} b={rate(a.bpOpp - a.bpConv, a.bpOpp)}
-              aText={`${b.bpOpp - b.bpConv}/${b.bpOpp}`} bText={`${a.bpOpp - a.bpConv}/${a.bpOpp}`} />
-            <StatRow label={tr("stat.aces")} a={a.aces} b={b.aces} />
-            <StatRow label={tr("stat.doubleFaults")} a={a.doubleFaults} b={b.doubleFaults} higherIsBetter={false} />
-            <StatRow label={tr("stat.winners")} a={a.winners} b={b.winners} />
-            <StatRow label={tr("stat.unforcedErrors")} a={a.unforcedErrors} b={b.unforcedErrors} higherIsBetter={false} />
-          </>
-        )}
+        {h2hRows(h, tr).map((r) => <StatRow key={r.label} {...r} />)}
         <div style={{ padding: "8px 14px", borderTop: `1px solid ${t.border}`, fontSize: 12, color: t.textSub }}>
           {detailed ? tr("h2h.pointsNote", { n: h.detailedMatches, total: h.total }) : tr("h2h.noPoints")}
         </div>
@@ -125,77 +137,115 @@ function TabBtn({ active, onClick, children, t }) {
   );
 }
 
-export default function H2HPage({ initialA, initialB, onBack }) {
+export default function H2HPage({ initialA, initialB, initialDoubles, onBack }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
   const matches = useMemo(() => storage.listMatches(), []);
-  const players = useMemo(() => listH2HPlayers(matches), [matches]);
+  const [kind, setKind] = useState(initialDoubles ? "doubles" : "singles");
   const [mode, setMode] = useState(initialB ? "pair" : "player");
-  const [nameA, setNameA] = useState(initialA || players[0]?.name || "");
-  const rivals = useMemo(() => (nameA ? listH2HOpponents(matches, nameA) : []), [matches, nameA]);
+  const [nameA, setNameA] = useState(initialA || "");
   const [nameB, setNameB] = useState(initialB || "");
-  const effectiveB = rivals.some((r) => r.key === normName(nameB)) ? nameB : (rivals[0]?.name || "");
+  const [note, setNote] = useState("");
 
-  const pair = useMemo(() => (mode === "pair" && nameA && effectiveB ? computeH2H(matches, nameA, effectiveB) : null), [mode, matches, nameA, effectiveB]);
-  const player = useMemo(() => (mode === "player" && nameA ? computePlayerStats(matches, nameA) : null), [mode, matches, nameA]);
+  // Lista wyboru: single i debel w trybie "zawodnik" to pojedyncze osoby, a debel w trybie "para" to pary.
+  const teamsMode = kind === "doubles" && mode === "pair";
+  const keyOf = (name) => (teamsMode ? teamKey(String(name).split(" / ")) : normName(name));
+  const options = useMemo(
+    () => (teamsMode ? listH2HTeams(matches) : listH2HPlayers(matches, kind)),
+    [matches, kind, teamsMode],
+  );
+  const effectiveA = options.some((o) => o.key === keyOf(nameA)) ? nameA : (options[0]?.name || "");
+  const rivals = useMemo(() => {
+    if (!effectiveA || mode !== "pair") return [];
+    return teamsMode ? listH2HTeamOpponents(matches, effectiveA) : listH2HOpponents(matches, effectiveA, kind);
+  }, [matches, effectiveA, mode, kind, teamsMode]);
+  const effectiveB = rivals.some((r) => r.key === keyOf(nameB)) ? nameB : (rivals[0]?.name || "");
+
+  const pair = useMemo(() => (mode === "pair" && effectiveA && effectiveB ? computeH2H(matches, effectiveA, effectiveB, kind) : null), [mode, matches, effectiveA, effectiveB, kind]);
+  const player = useMemo(() => (mode === "player" && effectiveA ? computePlayerStats(matches, effectiveA, kind) : null), [mode, matches, effectiveA, kind]);
   const h = pair || player;
+  const hasAny = listH2HPlayers(matches, "singles").length + listH2HPlayers(matches, "doubles").length > 0;
 
   const select = { ...styles.input, appearance: "auto", marginBottom: 12, cursor: "pointer" };
   const labels = { matches: tr("h2h.matches"), sets: tr("h2h.sets"), games: tr("h2h.games"), points: tr("h2h.points") };
-  const shareName = pair ? undefined : tr("h2h.allOpponents");
-  const shareData = h && (pair ? h : { ...h, nameA: h.name, nameB: shareName });
+  const shareData = h && (pair ? h : { ...h, nameA: h.name, nameB: tr("h2h.allOpponents") });
   const onShareLink = () => shareMatch(h2hText(shareData, labels), buildH2HShareUrl(shareData));
   const onShareText = () => shareMatch(h2hText(shareData, labels), null);
-  const btn = { ...styles.secondaryBtn, flex: 1, minWidth: 0, fontSize: 14 };
+  const onShareImage = async () => {
+    const png = renderStatsPng({
+      title: tr("h2h.title"), nameA: shareData.nameA, nameB: shareData.nameB,
+      scoreA: h.a.matchesWon, scoreB: h.b.matchesWon, subtitle: tr("h2h.playedN", { n: h.total }),
+      rows: h2hRows(h, tr),
+    }, t);
+    const r = await shareStatsPng(png, "tennis-tracker-statystyki.png", `${shareData.nameA} – ${shareData.nameB}`);
+    setNote(r === "downloaded" ? tr("h2h.imageSaved") : r === "failed" ? tr("h2h.imageError") : "");
+  };
+  const btn = { ...styles.secondaryBtn, flex: 1, minWidth: 0, fontSize: 13, padding: "0 6px" };
+  const opponentsClickable = kind === "singles";
+  const switchKind = (k) => { setKind(k); setNameA(""); setNameB(""); setNote(""); };
+  const switchMode = (m) => { setMode(m); setNameA(""); setNameB(""); setNote(""); };
 
   return (
     <FullScreen>
       <TopBar title={tr("h2h.title")} onBack={onBack} />
       <ScrollBody style={{ padding: 16 }}>
-        {players.length === 0 ? (
+        {!hasAny ? (
           <div style={styles.centered}><span style={{ maxWidth: 280 }}>{tr("h2h.empty")}</span></div>
         ) : (
           <>
-            <div style={{ display: "flex", gap: 4, padding: 3, background: t.tonal, borderRadius: 999, marginBottom: 14 }}>
-              <TabBtn t={t} active={mode === "player"} onClick={() => setMode("player")}>{tr("h2h.modePlayer")}</TabBtn>
-              <TabBtn t={t} active={mode === "pair"} onClick={() => setMode("pair")}>{tr("h2h.modePair")}</TabBtn>
+            <div style={{ display: "flex", gap: 4, padding: 3, background: t.tonal, borderRadius: 999, marginBottom: 10 }}>
+              <TabBtn t={t} active={kind === "singles"} onClick={() => switchKind("singles")}>{tr("h2h.kindSingles")}</TabBtn>
+              <TabBtn t={t} active={kind === "doubles"} onClick={() => switchKind("doubles")}>{tr("h2h.kindDoubles")}</TabBtn>
             </div>
-            <span style={styles.label}>{tr("h2h.player")}</span>
-            <select style={select} value={nameA} onChange={(e) => { setNameA(e.target.value); setNameB(""); }}>
-              {players.map((p) => <option key={p.key} value={p.name}>{p.name}</option>)}
-            </select>
-            {mode === "pair" && (
+            <div style={{ display: "flex", gap: 4, padding: 3, background: t.tonal, borderRadius: 999, marginBottom: 14 }}>
+              <TabBtn t={t} active={mode === "player"} onClick={() => switchMode("player")}>{tr("h2h.modePlayer")}</TabBtn>
+              <TabBtn t={t} active={mode === "pair"} onClick={() => switchMode("pair")}>{tr(kind === "doubles" ? "h2h.modeTeams" : "h2h.modePair")}</TabBtn>
+            </div>
+            {options.length === 0 ? (
+              <div style={styles.centered}><span style={{ maxWidth: 280 }}>{tr("h2h.emptyKind")}</span></div>
+            ) : (
               <>
-                <span style={styles.label}>{tr("h2h.rival")}</span>
-                <select style={select} value={effectiveB} onChange={(e) => setNameB(e.target.value)}>
-                  {rivals.length === 0 && <option value="">{tr("h2h.pickRival")}</option>}
-                  {rivals.map((r) => <option key={r.key} value={r.name}>{r.name} ({r.count})</option>)}
+                <span style={styles.label}>{tr(teamsMode ? "h2h.team" : "h2h.player")}</span>
+                <select style={select} value={effectiveA} onChange={(e) => { setNameA(e.target.value); setNameB(""); }}>
+                  {options.map((p) => <option key={p.key} value={p.name}>{p.name}</option>)}
                 </select>
-              </>
-            )}
-
-            {h && h.total > 0 && (
-              <>
-                <StatsBlock playerMode={!pair} h={h} nameA={pair ? h.nameA : h.name} nameB={pair ? h.nameB : tr("h2h.allOpponents")} />
-                {player && player.opponents.length > 0 && (
-                  <Card>
-                    <Title>{tr("h2h.opponentsTitle")}</Title>
-                    {player.opponents.map((o) => (
-                      <button key={o.key} onClick={() => { setNameB(o.name); setMode("pair"); }} style={{
-                        display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", gap: 8,
-                        padding: "10px 14px", border: "none", borderTop: `1px solid ${t.border}`, background: "transparent",
-                        color: t.text, fontFamily: "inherit", fontSize: 14, cursor: "pointer", textAlign: "left",
-                      }}>
-                        <span style={{ fontWeight: 650 }}>{o.name}</span>
-                        <span style={{ color: t.textSub, fontFamily: t.fontScore, fontSize: 16 }}>{o.won}–{o.lost} ({o.played})</span>
-                      </button>
-                    ))}
-                  </Card>
+                {mode === "pair" && (
+                  <>
+                    <span style={styles.label}>{tr(teamsMode ? "h2h.rivalTeam" : "h2h.rival")}</span>
+                    <select style={select} value={effectiveB} onChange={(e) => setNameB(e.target.value)}>
+                      {rivals.length === 0 && <option value="">{tr("h2h.pickRival")}</option>}
+                      {rivals.map((r) => <option key={r.key} value={r.name}>{r.name} ({r.count})</option>)}
+                    </select>
+                  </>
                 )}
-                <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                  <button style={btn} onClick={onShareLink}><ShareIcon size={19} />{tr("h2h.shareLink")}</button>
-                  <button style={btn} onClick={onShareText}><Icon name="edit" size={19} />{tr("h2h.shareText")}</button>
-                </div>
+
+                {h && h.total > 0 && (
+                  <>
+                    <StatsBlock playerMode={!pair} h={h} nameA={pair ? h.nameA : h.name} nameB={pair ? h.nameB : tr("h2h.allOpponents")} />
+                    {player && player.opponents.length > 0 && (
+                      <Card>
+                        <Title>{tr("h2h.opponentsTitle")}</Title>
+                        {player.opponents.map((o) => (
+                          <button key={o.key} disabled={!opponentsClickable}
+                            onClick={() => { if (opponentsClickable) { setNameA(h.name); setNameB(o.name); setMode("pair"); } }} style={{
+                              display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", gap: 8,
+                              padding: "10px 14px", border: "none", borderTop: `1px solid ${t.border}`, background: "transparent",
+                              color: t.text, fontFamily: "inherit", fontSize: 14, cursor: opponentsClickable ? "pointer" : "default", textAlign: "left",
+                            }}>
+                            <span style={{ fontWeight: 650 }}>{o.name}</span>
+                            <span style={{ color: t.textSub, fontFamily: t.fontScore, fontSize: 16 }}>{o.won}–{o.lost} ({o.played})</span>
+                          </button>
+                        ))}
+                      </Card>
+                    )}
+                    <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                      <button style={btn} onClick={onShareImage}><Icon name="image" size={18} />{tr("h2h.shareImage")}</button>
+                      <button style={btn} onClick={onShareLink}><ShareIcon size={18} />{tr("h2h.shareLink")}</button>
+                      <button style={btn} onClick={onShareText}><Icon name="edit" size={18} />{tr("h2h.shareText")}</button>
+                    </div>
+                    {note && <div style={{ fontSize: 12, color: t.textSub, textAlign: "center", marginTop: 8 }}>{note}</div>}
+                  </>
+                )}
               </>
             )}
           </>

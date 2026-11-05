@@ -383,7 +383,7 @@ export default function App() {
             onDeleted={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : goToList}
             onSurfaceChange={setActiveSurface}
             onContinue={(id) => setView({ name: "tracker", matchId: id, tieId: view.tieId })}
-            onOpenH2H={(a, b) => setView({ name: "h2h", a, b, fromMatchId: view.matchId, tieId: view.tieId })}
+            onOpenH2H={(a, b, dbl) => setView({ name: "h2h", a, b, dbl, fromMatchId: view.matchId, tieId: view.tieId })}
           />
         )}
 
@@ -391,6 +391,7 @@ export default function App() {
           <H2HPage
             initialA={view.a}
             initialB={view.b}
+            initialDoubles={view.dbl}
             onBack={view.fromMatchId ? () => setView({ name: "summary", matchId: view.fromMatchId, tieId: view.tieId }) : goToList}
           />
         )}
