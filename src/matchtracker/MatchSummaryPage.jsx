@@ -20,7 +20,7 @@ const STAT_ROWS = [
   ["netPoints", "stat.netPoints"],
 ];
 
-export default function MatchSummaryPage({ matchId, onBack, onContinue, onDeleted, onSurfaceChange }) {
+export default function MatchSummaryPage({ matchId, onBack, onContinue, onDeleted, onSurfaceChange, onOpenH2H }) {
   const { t, styles } = useThemeCtx();
   const { lang, t: tr } = useLang();
   const match = storage.getMatch(matchId);
@@ -154,6 +154,11 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
               style={styles.secondaryBtn}
               onClick={() => shareMatch(`${name1} – ${name2}: ${setsRow.join(" ")}`, buildProShareUrl(match, setsRow))}
             ><ShareIcon size={15} /> {tr("summary.shareProResult")}</button>
+          )}
+          {onOpenH2H && !match.isDoubles && match.team1.names.length === 1 && match.team2.names.length === 1 && (
+            <button style={styles.secondaryBtn} onClick={() => onOpenH2H(match.team1.names[0], match.team2.names[0])}>
+              <Icon name="stats" size={19} />{tr("h2h.fromSummary")}
+            </button>
           )}
           <button style={{ ...styles.secondaryBtn, background: `${t.danger}1c`, color: t.danger }} onClick={handleDelete}><Icon name="trash" size={19} />{tr("common.deleteMatch")}</button>
         </div>

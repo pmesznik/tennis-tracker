@@ -79,6 +79,25 @@ export function buildProShareUrl(match, setsRow) {
   return `${SHARE_BASE_URL}/?pro=${toBase64Url(JSON.stringify(payload))}`;
 }
 
+// Link ze statystykami łącznymi dwóch zawodników (H2H): bilans meczów, setów,
+// gemów i punktów plus ostatnie spotkania. Dane w parametrze `h2h`, jak w
+// buildProShareUrl — strona udostępniania renderuje je po stronie klienta.
+export function buildH2HShareUrl(h) {
+  const side = (x) => ({
+    mw: x.matchesWon, sw: x.setsWon, gw: x.gamesWon, pw: x.pointsWon,
+    sp: [x.servePointsWon, x.servePointsTotal], rp: [x.returnPointsWon, x.returnPointsTotal],
+    ac: x.aces, df: x.doubleFaults, wi: x.winners, ue: x.unforcedErrors,
+  });
+  const payload = {
+    v: 1,
+    a: h.nameA, b: h.nameB, n: h.total, dm: h.detailedMatches,
+    A: side(h.a), B: side(h.b),
+    m: h.list.slice(-10).map((x) => [x.date, x.surface, x.sets.join(" "), x.winner]),
+    pal: getStoredPalette() || "classic",
+  };
+  return `${SHARE_BASE_URL}/?h2h=${toBase64Url(JSON.stringify(payload))}`;
+}
+
 // Link do trybu "na żywo" — strona pod tym adresem subskrybuje Firebase
 // Realtime Database (liveMatches/{matchId}) i sama się odświeża przy każdym
 // nowym punkcie, dopóki nadawca ma włączone udostępnianie na żywo.

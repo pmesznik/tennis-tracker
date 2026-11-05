@@ -262,6 +262,7 @@
     <a href="#debel">Serwis w deblu</a>
     <a href="#udostepnianie">Udostępnianie</a>
     <a href="#zawodnicy">Zawodnicy</a>
+    <a href="#h2h">Statystyki z rywalem</a>
     <a href="#rywalizacje">Rywalizacje drużynowe</a>
     <a href="#backup">Kopia zapasowa</a>
     <a href="#wyglad">Wygląd i ikona</a>
@@ -283,7 +284,7 @@
           <div class="tagline">Dokumentacja projektu</div>
         </div>
       </div>
-      <div class="version-pill"><span class="dot"></span>v0.13.1</div>
+      <div class="version-pill"><span class="dot"></span>v0.14.0</div>
     </header>
 
     <p class="lede">
@@ -545,6 +546,25 @@
       </ul>
     </section>
 
+    <section id="h2h">
+      <div class="eyebrow">Statystyki</div>
+      <h2>Statystyki z rywalem (H2H)</h2>
+      <p>
+        Ikona wykresu w chowanym menu na liście meczów (oraz przycisk „Statystyki z rywalem” w podsumowaniu singla) otwiera
+        ekran, na którym wybierasz zawodnika i jego rywala. <code>h2h.js</code> bierze z historii tylko ukończone single tych
+        dwóch osób (nazwiska porównywane bez względu na wielkość liter, spacje i polskie znaki) i liczy:
+      </p>
+      <ul class="plain">
+        <li><strong>Mecze, sety i gemy</strong> — z każdego meczu, także zapisanego samym wynikiem. Super tie-break liczy się jako set, ale nie jako gemy.</li>
+        <li><strong>Punkty</strong> — tylko z meczów śledzonych punkt po punkcie: wygrane punkty, skuteczność przy własnym serwisie i przy returnie, asy, podwójne błędy, winnery i niewymuszone błędy.</li>
+        <li><strong>Seria, nawierzchnie, historia</strong> — aktualna seria zwycięstw, bilans wg nawierzchni i lista spotkań z wynikiem ustawionym z perspektywy wybranego zawodnika.</li>
+      </ul>
+      <p>
+        Statystyki można wysłać: przyciskiem <em>Udostępnij link</em> (strona <code>?h2h=</code>, dane zakodowane w adresie jak w karcie Pro,
+        bez backendu) albo jako zwykły tekst. Logika ma testy automatyczne (<code>npm test</code>, Vitest).
+      </p>
+    </section>
+
     <section id="rywalizacje">
       <div class="eyebrow">Rywalizacje</div>
       <h2>Rywalizacje drużynowe (tie)</h2>
@@ -787,7 +807,7 @@ npx cap sync android</code></pre>
 
     <footer>
       <span>Tennis Tracker — dokumentacja wewnętrzna projektu.</span>
-      <span>Wygenerowano dla wersji <span class="mono">v0.13.1</span></span>
+      <span>Wygenerowano dla wersji <span class="mono">v0.14.0</span></span>
     </footer>
   </main>
 </div>

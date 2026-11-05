@@ -318,11 +318,53 @@
       '<div class="footer">Pełny raport z meczu — Tennis Tracker</div>';
   }
 
+  // Statystyki łączne dwóch zawodników (H2H): bilans meczów, setów, gemów i
+  // punktów plus ostatnie spotkania.
+  function renderH2H(data) {
+    const content = document.getElementById("content");
+    if (!data || !data.A || !data.B) {
+      applyTheme("classic", null);
+      content.innerHTML = '<div class="error">Nieprawidłowy link ze statystykami.</div>';
+      return;
+    }
+    applyTheme(data.pal, null);
+    const A = data.A, B = data.B;
+    const pc = (pair) => (pair && pair[1] ? Math.round((pair[0] / pair[1]) * 100) + "% (" + pair[0] + "/" + pair[1] + ")" : "–");
+    const row = (label, l, r) =>
+      '<div class="stat-row"><strong>' + l + '</strong><span class="stat-label">' + label + "</span><strong>" + r + "</strong></div>";
+    const detailed = (data.dm || 0) > 0;
+    const rows =
+      row("Mecze", A.mw, B.mw) + row("Sety", A.sw, B.sw) + row("Gemy", A.gw, B.gw) +
+      (detailed
+        ? row("Punkty", A.pw, B.pw) +
+          row("Punkty przy własnym serwisie", pc(A.sp), pc(B.sp)) +
+          row("Punkty przy returnie", pc(A.rp), pc(B.rp)) +
+          row("Asy", A.ac, B.ac) + row("Podwójne błędy", A.df, B.df) +
+          row("Winnery", A.wi, B.wi) + row("Niewymuszone błędy", A.ue, B.ue)
+        : "");
+    const history = (data.m || []).slice().reverse().map((m) =>
+      '<div class="stat-row"><span>' + esc(m[0] || "") + (m[1] ? " · " + esc(m[1]) : "") + '</span><strong style="text-align:right">' + esc(m[2] || "") + "</strong></div>"
+    ).join("");
+    content.innerHTML =
+      '<div class="pro-badge">STATYSTYKI Z RYWALEM</div>' +
+      '<div class="players">' + esc(data.a) + "</div>" +
+      '<div class="vs">vs.</div>' +
+      '<div class="players">' + esc(data.b) + "</div>" +
+      '<div class="sets"><span>' + A.mw + " : " + B.mw + "</span></div>" +
+      '<div class="meta">Rozegrane mecze: ' + esc(data.n) + "</div>" +
+      '<div class="pro-section"><div class="stat-head"><span>' + esc(data.a) + "</span><span>" + esc(data.b) + "</span></div>" + rows +
+      (detailed ? '<div class="time-row"><span>Punkty z ' + esc(data.dm) + " z " + esc(data.n) + " meczów śledzonych punkt po punkcie</span></div>" : "") +
+      "</div>" +
+      (history ? '<div class="pro-section"><div class="section-title">Historia spotkań</div>' + history + "</div>" : "") +
+      '<div class="footer">Statystyki z rywalem — Tennis Tracker</div>';
+  }
+
   function init() {
     const params = new URLSearchParams(window.location.search);
     const liveId = params.get("live");
     const staticData = params.get("d");
     const proData = params.get("pro");
+    const h2hData = params.get("h2h");
 
     if (liveId) {
       const app = initializeApp(FIREBASE_CONFIG);
@@ -332,6 +374,15 @@
         (snapshot) => renderMatch(snapshot.val(), { live: true }),
         () => renderMatch(null, { live: true })
       );
+      return;
+    }
+
+    if (h2hData) {
+      try {
+        renderH2H(JSON.parse(fromBase64Url(h2hData)));
+      } catch (e) {
+        renderH2H(null);
+      }
       return;
     }
 

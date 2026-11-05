@@ -7,6 +7,7 @@ import MatchListPage from "./matchtracker/MatchListPage.jsx";
 import MatchSetupPage from "./matchtracker/MatchSetupPage.jsx";
 import MatchTrackerPage from "./matchtracker/MatchTrackerPage.jsx";
 import MatchSummaryPage from "./matchtracker/MatchSummaryPage.jsx";
+import H2HPage from "./matchtracker/H2HPage.jsx";
 import BackupModal from "./matchtracker/BackupModal.jsx";
 import TeamTieListPage from "./matchtracker/TeamTieListPage.jsx";
 import TeamTieSetupPage from "./matchtracker/TeamTieSetupPage.jsx";
@@ -302,6 +303,9 @@ export default function App() {
                   <button onClick={() => { setMenuOpen(false); setView({ name: "tieList" }); }} aria-label={langCtx.t("tie.iconTitle")} title={langCtx.t("tie.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
                     <Icon name="trophy" size={20} />
                   </button>
+                  <button onClick={() => { setMenuOpen(false); setView({ name: "h2h" }); }} aria-label={langCtx.t("h2h.iconTitle")} title={langCtx.t("h2h.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
+                    <Icon name="stats" size={20} />
+                  </button>
                   <button onClick={() => { setMenuOpen(false); setShowPalette(true); }} aria-label={langCtx.t("palette.iconTitle")} title={langCtx.t("palette.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
                     <Icon name="palette" size={20} />
                   </button>
@@ -371,6 +375,15 @@ export default function App() {
             onDeleted={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : goToList}
             onSurfaceChange={setActiveSurface}
             onContinue={(id) => setView({ name: "tracker", matchId: id, tieId: view.tieId })}
+            onOpenH2H={(a, b) => setView({ name: "h2h", a, b, fromMatchId: view.matchId, tieId: view.tieId })}
+          />
+        )}
+
+        {view.name === "h2h" && (
+          <H2HPage
+            initialA={view.a}
+            initialB={view.b}
+            onBack={view.fromMatchId ? () => setView({ name: "summary", matchId: view.fromMatchId, tieId: view.tieId }) : goToList}
           />
         )}
 
