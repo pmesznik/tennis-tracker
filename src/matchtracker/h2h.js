@@ -8,7 +8,7 @@
 // ("Zapisz wynik") liczą się do meczów, setów i gemów.
 // ─────────────────────────────────────────────────────────────────────────────
 import { computeScore } from "./scoringEngine.js";
-import { computeStats } from "./stats.js";
+import { computeStats, computeBreakPoints } from "./stats.js";
 
 export function normName(n) {
   return String(n || "")
@@ -78,17 +78,14 @@ const zeroSide = () => ({
   matchesWon: 0, setsWon: 0, gamesWon: 0, pointsWon: 0,
   servePointsWon: 0, servePointsTotal: 0, returnPointsWon: 0, returnPointsTotal: 0,
   aces: 0, doubleFaults: 0, winners: 0, forcedErrors: 0, unforcedErrors: 0, netPoints: 0,
+  bpOpp: 0, bpConv: 0, // break pointy jako returner: szanse / wykorzystane
 });
 
-/**
- * Bilans spotkań dwóch zawodników. Zwraca stronę `a` i `b` w orientacji
- * "zawodnik A kontra zawodnik B" niezależnie od tego, kto był team1/team2.
- */
-export function computeH2H(matches, nameA, nameB) {
-  const ka = normName(nameA), kb = normName(nameB);
+function aggregate(matches, pick) {
   const a = zeroSide(), b = zeroSide();
   const list = [];
   const bySurface = {};
+  const opponents = new Map();
   let detailedMatches = 0;
   let totalMatches = 0, undecided = 0;
 
@@ -99,11 +96,8 @@ export function computeH2H(matches, nameA, nameB) {
   for (const m of sorted) {
     const names = singlesNames(m);
     if (!names) continue;
-    const k1 = normName(names[0]), k2 = normName(names[1]);
-    let aIsTeam1;
-    if (k1 === ka && k2 === kb) aIsTeam1 = true;
-    else if (k1 === kb && k2 === ka) aIsTeam1 = false;
-    else continue;
+    const aIsTeam1 = pick(normName(names[0]), normName(names[1]));
+    if (aIsTeam1 === null) continue;
 
     totalMatches++;
     const mine = aIsTeam1 ? "team1" : "team2";
@@ -114,11 +108,12 @@ export function computeH2H(matches, nameA, nameB) {
     if (winner) sideOf(winner).matchesWon++; else undecided++;
 
     const oriented = [];
+    let mga = 0, mgb = 0;
     for (const s of sets) {
       const sa = aIsTeam1 ? s.a : s.b;
       const sb = aIsTeam1 ? s.b : s.a;
       if (sa > sb) a.setsWon++; else if (sb > sa) b.setsWon++;
-      if (!s.isSuperTiebreak) { a.gamesWon += sa; b.gamesWon += sb; }
+      if (!s.isSuperTiebreak) { a.gamesWon += sa; b.gamesWon += sb; mga += sa; mgb += sb; }
       const tb = s.tiebreak ? `(${Math.min(s.tiebreak.a, s.tiebreak.b)})` : "";
       oriented.push(s.isSuperTiebreak ? `[${sa}-${sb}]` : `${sa}-${sb}${tb}`);
     }
@@ -137,6 +132,9 @@ export function computeH2H(matches, nameA, nameB) {
           if (p.winner === theirs) b.servePointsWon++; else a.returnPointsWon++;
         }
       }
+      const bp = computeBreakPoints(m.rules, log, m.initialServer || "team1");
+      a.bpOpp += bp[mine].opp; a.bpConv += bp[mine].conv;
+      b.bpOpp += bp[theirs].opp; b.bpConv += bp[theirs].conv;
       const { stats } = computeStats(log);
       for (const key of ["aces", "doubleFaults", "winners", "forcedErrors", "unforcedErrors", "netPoints"]) {
         a[key] += stats[mine][key];
@@ -148,8 +146,15 @@ export function computeH2H(matches, nameA, nameB) {
     const bs = bySurface[surf] || (bySurface[surf] = { a: 0, b: 0 });
     if (winner === mine) bs.a++; else if (winner === theirs) bs.b++;
 
+    const oppName = aIsTeam1 ? names[1] : names[0];
+    const ok = normName(oppName);
+    const orec = opponents.get(ok) || { name: oppName, key: ok, played: 0, won: 0, lost: 0 };
+    orec.played++;
+    if (winner === mine) orec.won++; else if (winner === theirs) orec.lost++;
+    opponents.set(ok, orec);
+
     list.push({
-      id: m.id, date: m.date || "", surface: m.surface || null, sets: oriented,
+      id: m.id, opponent: oppName, games: [mga, mgb], date: m.date || "", surface: m.surface || null, sets: oriented,
       winner: winner ? (winner === mine ? "a" : "b") : null,
     });
   }
@@ -165,11 +170,33 @@ export function computeH2H(matches, nameA, nameB) {
   }
 
   return {
-    nameA, nameB, total: totalMatches, undecided, detailedMatches,
+    total: totalMatches, undecided, detailedMatches,
     a, b, list, bySurface, streak,
+    opponents: [...opponents.values()].sort((x, y) => y.played - x.played || x.name.localeCompare(y.name)),
     totalGames: a.gamesWon + b.gamesWon,
     totalPoints: a.pointsWon + b.pointsWon,
   };
+}
+
+/**
+ * Bilans spotkań dwóch zawodników. Zwraca stronę `a` i `b` w orientacji
+ * "zawodnik A kontra zawodnik B" niezależnie od tego, kto był team1/team2.
+ */
+export function computeH2H(matches, nameA, nameB) {
+  const ka = normName(nameA), kb = normName(nameB);
+  const r = aggregate(matches, (k1, k2) => (k1 === ka && k2 === kb ? true : k1 === kb && k2 === ka ? false : null));
+  return { nameA, nameB, ...r };
+}
+
+/**
+ * Statystyki jednego zawodnika ze wszystkich jego ukończonych singli: `a` to
+ * on, `b` to suma jego rywali (statystyki "przeciwko"). `opponents` zawiera
+ * bilans z każdym rywalem z osobna.
+ */
+export function computePlayerStats(matches, name) {
+  const k = normName(name);
+  const r = aggregate(matches, (k1, k2) => (k1 === k ? true : k2 === k ? false : null));
+  return { name, ...r };
 }
 
 export const pct = (won, total) => (total ? Math.round((won / total) * 100) : null);

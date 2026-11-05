@@ -8,7 +8,7 @@
 // zapisywane poza samym urządzeniem nadawcy.
 // ─────────────────────────────────────────────────────────────────────────────
 import { computeScore } from "./scoringEngine.js";
-import { computeStats } from "./stats.js";
+import { computeStats, computeBreakPoints, flowSeries } from "./stats.js";
 import { longestPoint, averagePointDurationMs } from "./time.js";
 import { getStoredPalette } from "../theme.js";
 
@@ -57,6 +57,7 @@ export function buildProShareUrl(match, setsRow) {
   const hasTiming = !match.finalSetsOverride && match.startedAt != null;
   const score = match.finalSetsOverride ? null : computeScore(match.rules, match.pointLog, match.initialServer || "team1", match.startedAt);
   const { stats, avgRally } = computeStats(match.pointLog);
+  const bp = computeBreakPoints(match.rules, match.pointLog, match.initialServer || "team1");
   const longest = hasTiming ? longestPoint(match.pointLog, match.startedAt) : null;
 
   const payload = {
@@ -74,6 +75,10 @@ export function buildProShareUrl(match, setsRow) {
     lpm: longest ? longest.durationMs : null,
     st1: stats.team1,
     st2: stats.team2,
+    bp1: [bp.team1.conv, bp.team1.opp],
+    bp2: [bp.team2.conv, bp.team2.opp],
+    pts: [match.pointLog.filter((p) => p.winner === "team1").length, match.pointLog.filter((p) => p.winner === "team2").length],
+    fl: flowSeries(match.pointLog, 100),
     ar: avgRally,
   };
   return `${SHARE_BASE_URL}/?pro=${toBase64Url(JSON.stringify(payload))}`;
@@ -86,7 +91,7 @@ export function buildH2HShareUrl(h) {
   const side = (x) => ({
     mw: x.matchesWon, sw: x.setsWon, gw: x.gamesWon, pw: x.pointsWon,
     sp: [x.servePointsWon, x.servePointsTotal], rp: [x.returnPointsWon, x.returnPointsTotal],
-    ac: x.aces, df: x.doubleFaults, wi: x.winners, ue: x.unforcedErrors,
+    ac: x.aces, df: x.doubleFaults, wi: x.winners, ue: x.unforcedErrors, bp: [x.bpConv, x.bpOpp],
   });
   const payload = {
     v: 1,

@@ -101,6 +101,9 @@
   .stat-row{ display:flex; align-items:center; font-size:13px; padding:6px 0; border-top:1px solid var(--border); }
   .stat-row strong{ flex:1; font-size:14px; }
   .stat-row strong:last-child{ text-align:right; }
+  .bar{ display:flex; height:5px; border-radius:3px; overflow:hidden; gap:2px; margin:0 0 7px; }
+  .stat-block{ border-top:1px solid var(--border); padding:6px 0 0; }
+  .stat-block .stat-row{ border-top:none; padding:0 0 4px; }
   .stat-label{ flex:1.6; text-align:center; font-size:10.5px; color:var(--text-muted); text-transform:uppercase; }
 </style>
 </head>
@@ -183,6 +186,29 @@
   // Ta sama piłeczka (logo D, kula z kropek) co TennisBall w aplikacji — spójny wygląd zamiast
   // emoji 🎾, które różnie renderuje się na różnych systemach.
   const BALL_SVG = "<svg width=\"22\" height=\"22\" viewBox=\"0 0 256 256\" aria-hidden=\"true\"><g fill=\"#C6FF00\"><circle cx=\"97\" cy=\"20.61\" r=\"8.0\"/><circle cx=\"128\" cy=\"20.61\" r=\"8.5\"/><circle cx=\"159\" cy=\"20.61\" r=\"8.0\"/><circle cx=\"50.5\" cy=\"47.46\" r=\"8.0\"/><circle cx=\"81.5\" cy=\"47.46\" r=\"9.8\"/><circle cx=\"112.5\" cy=\"47.46\" r=\"10.7\"/><circle cx=\"143.5\" cy=\"47.46\" r=\"10.7\"/><circle cx=\"174.5\" cy=\"47.46\" r=\"9.8\"/><circle cx=\"205.5\" cy=\"47.46\" r=\"8.0\"/><circle cx=\"35\" cy=\"74.31\" r=\"8.5\"/><circle cx=\"97\" cy=\"74.31\" r=\"12.0\"/><circle cx=\"128\" cy=\"74.31\" r=\"12.5\"/><circle cx=\"159\" cy=\"74.31\" r=\"12.0\"/><circle cx=\"221\" cy=\"74.31\" r=\"8.5\"/><circle cx=\"19.5\" cy=\"101.15\" r=\"8.0\"/><circle cx=\"50.5\" cy=\"101.15\" r=\"10.7\"/><circle cx=\"112.5\" cy=\"101.15\" r=\"13.4\"/><circle cx=\"143.5\" cy=\"101.15\" r=\"13.4\"/><circle cx=\"205.5\" cy=\"101.15\" r=\"10.7\"/><circle cx=\"236.5\" cy=\"101.15\" r=\"8.0\"/><circle cx=\"35\" cy=\"128\" r=\"9.8\"/><circle cx=\"66\" cy=\"128\" r=\"12.0\"/><circle cx=\"97\" cy=\"128\" r=\"13.4\"/><circle cx=\"128\" cy=\"128\" r=\"13.8\"/><circle cx=\"159\" cy=\"128\" r=\"13.4\"/><circle cx=\"190\" cy=\"128\" r=\"12.0\"/><circle cx=\"221\" cy=\"128\" r=\"9.8\"/><circle cx=\"19.5\" cy=\"154.85\" r=\"8.0\"/><circle cx=\"50.5\" cy=\"154.85\" r=\"10.7\"/><circle cx=\"112.5\" cy=\"154.85\" r=\"13.4\"/><circle cx=\"143.5\" cy=\"154.85\" r=\"13.4\"/><circle cx=\"205.5\" cy=\"154.85\" r=\"10.7\"/><circle cx=\"236.5\" cy=\"154.85\" r=\"8.0\"/><circle cx=\"35\" cy=\"181.69\" r=\"8.5\"/><circle cx=\"97\" cy=\"181.69\" r=\"12.0\"/><circle cx=\"128\" cy=\"181.69\" r=\"12.5\"/><circle cx=\"159\" cy=\"181.69\" r=\"12.0\"/><circle cx=\"221\" cy=\"181.69\" r=\"8.5\"/><circle cx=\"50.5\" cy=\"208.54\" r=\"8.0\"/><circle cx=\"81.5\" cy=\"208.54\" r=\"9.8\"/><circle cx=\"112.5\" cy=\"208.54\" r=\"10.7\"/><circle cx=\"143.5\" cy=\"208.54\" r=\"10.7\"/><circle cx=\"174.5\" cy=\"208.54\" r=\"9.8\"/><circle cx=\"205.5\" cy=\"208.54\" r=\"8.0\"/><circle cx=\"97\" cy=\"235.39\" r=\"8.0\"/><circle cx=\"128\" cy=\"235.39\" r=\"8.5\"/><circle cx=\"159\" cy=\"235.39\" r=\"8.0\"/></g></svg>";
+
+  // Wiersz porównania z paskiem proporcji (A = kolor akcentu, B = drugi kolor).
+  function barRow(label, a, b, aText, bText) {
+    const sum = (a || 0) + (b || 0);
+    const pa = sum ? ((a || 0) / sum) * 100 : 50;
+    const op = sum ? 1 : 0.25;
+    return '<div class="stat-block"><div class="stat-row"><strong>' + (aText != null ? aText : a) + '</strong><span class="stat-label">' + label +
+      "</span><strong>" + (bText != null ? bText : b) + '</strong></div><div class="bar"><div style="width:' + pa + "%;background:var(--accent);opacity:" + op +
+      '"></div><div style="width:' + (100 - pa) + "%;background:#B8BCC8;opacity:" + op + '"></div></div></div>';
+  }
+  function ratio(pair) { return pair && pair[1] ? pair[0] / pair[1] : 0; }
+  function flowSvg(series) {
+    if (!Array.isArray(series) || series.length < 2) return "";
+    const W = 300, H = 100, pad = 4;
+    const max = Math.max(3, ...series.map((v) => Math.abs(v)));
+    const x = (i) => pad + (i / (series.length - 1)) * (W - 2 * pad);
+    const y = (v) => H / 2 - (v / max) * (H / 2 - pad);
+    const pts = series.map((v, i) => x(i).toFixed(1) + "," + y(v).toFixed(1)).join(" ");
+    return '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" height="110" preserveAspectRatio="none">' +
+      '<line x1="0" y1="' + H / 2 + '" x2="' + W + '" y2="' + H / 2 + '" stroke="var(--border)"/>' +
+      '<polygon points="' + x(0) + "," + H / 2 + " " + pts + " " + x(series.length - 1) + "," + H / 2 + '" fill="var(--accent)" opacity="0.18"/>' +
+      '<polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>';
+  }
 
   function esc(s) {
     const d = document.createElement("div");
@@ -300,13 +326,17 @@
       statsHtml =
         '<div class="pro-section"><div class="section-title">Statystyki</div>' +
         '<div class="stat-head"><span>' + esc(t1) + "</span><span>" + esc(t2) + "</span></div>" +
-        STAT_LABELS.map(([key, label]) =>
-          '<div class="stat-row"><strong>' + (data.st1[key] ?? 0) + '</strong><span class="stat-label">' + label + "</span><strong>" + (data.st2[key] ?? 0) + "</strong></div>"
-        ).join("") +
+        (Array.isArray(data.pts) ? barRow("Wygrane punkty", data.pts[0], data.pts[1]) : "") +
+        (data.bp1 && data.bp2 ? barRow("Break pointy wykorzystane", ratio(data.bp1), ratio(data.bp2), data.bp1[0] + "/" + data.bp1[1], data.bp2[0] + "/" + data.bp2[1]) : "") +
+        STAT_LABELS.map(([key, label]) => barRow(label, data.st1[key] ?? 0, data.st2[key] ?? 0)).join("") +
         (data.ar != null ? '<div class="time-row"><span>Średnia długość wymiany</span><strong>' + esc(data.ar) + " uderzeń</strong></div>" : "") +
         "</div>";
     }
 
+    const flowHtml = Array.isArray(data.fl) && data.fl.length > 1
+      ? '<div class="pro-section"><div class="section-title">Przebieg meczu</div>' + flowSvg(data.fl) +
+        '<div class="stat-head"><span style="color:var(--accent)">▲ ' + esc(t1) + "</span><span>▼ " + esc(t2) + "</span></div></div>"
+      : "";
     content.innerHTML =
       '<div class="pro-badge">KARTA PRO</div>' +
       '<div class="players ' + p1Class + '">' + trophy1 + esc(t1) + "</div>" +
@@ -314,7 +344,7 @@
       '<div class="players ' + p2Class + '">' + trophy2 + esc(t2) + "</div>" +
       '<div class="sets">' + sets.map((s) => "<span>" + esc(s) + "</span>").join("") + "</div>" +
       '<div class="meta">' + metaParts.join(" &nbsp;·&nbsp; ") + "</div>" +
-      timeHtml + statsHtml +
+      timeHtml + statsHtml + flowHtml +
       '<div class="footer">Pełny raport z meczu — Tennis Tracker</div>';
   }
 
@@ -330,15 +360,16 @@
     applyTheme(data.pal, null);
     const A = data.A, B = data.B;
     const pc = (pair) => (pair && pair[1] ? Math.round((pair[0] / pair[1]) * 100) + "% (" + pair[0] + "/" + pair[1] + ")" : "–");
-    const row = (label, l, r) =>
-      '<div class="stat-row"><strong>' + l + '</strong><span class="stat-label">' + label + "</span><strong>" + r + "</strong></div>";
+    const row = (label, l, r, lt, rt) => barRow(label, l, r, lt, rt);
+    const pcr = (pair) => ratio(pair);
     const detailed = (data.dm || 0) > 0;
     const rows =
       row("Mecze", A.mw, B.mw) + row("Sety", A.sw, B.sw) + row("Gemy", A.gw, B.gw) +
       (detailed
         ? row("Punkty", A.pw, B.pw) +
-          row("Punkty przy własnym serwisie", pc(A.sp), pc(B.sp)) +
-          row("Punkty przy returnie", pc(A.rp), pc(B.rp)) +
+          row("Punkty przy własnym serwisie", pcr(A.sp), pcr(B.sp), pc(A.sp), pc(B.sp)) +
+          row("Punkty przy returnie", pcr(A.rp), pcr(B.rp), pc(A.rp), pc(B.rp)) +
+          (A.bp && B.bp ? row("Break pointy wykorzystane", pcr(A.bp), pcr(B.bp), A.bp[0] + "/" + A.bp[1], B.bp[0] + "/" + B.bp[1]) : "") +
           row("Asy", A.ac, B.ac) + row("Podwójne błędy", A.df, B.df) +
           row("Winnery", A.wi, B.wi) + row("Niewymuszone błędy", A.ue, B.ue)
         : "");

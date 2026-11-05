@@ -9,7 +9,8 @@ import { shareMatch, buildShareUrl, buildProShareUrl } from "./shareLink.js";
 import { clearLiveScore } from "./liveSync.js";
 import { removeMatchFromTie } from "./teamTies.js";
 import { formatDuration, longestPoint, averagePointDurationMs } from "./time.js";
-import { computeStats } from "./stats.js";
+import { computeStats, computeBreakPoints, flowSeries } from "./stats.js";
+import { StatRow, Donut, FlowChart, sideColors } from "./charts.jsx";
 
 const STAT_ROWS = [
   ["aces", "stat.aces"],
@@ -45,6 +46,10 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
 
   const hasPointDetail = match.trackingDepth !== "basic" && match.pointLog.length > 0;
   const { stats, avgRally } = hasPointDetail ? computeStats(match.pointLog) : { stats: null, avgRally: null };
+  const bp = hasPointDetail ? computeBreakPoints(match.rules, match.pointLog, match.initialServer || TEAM1) : null;
+  const ptsA = match.pointLog.filter((p) => p.winner === TEAM1).length;
+  const ptsB = match.pointLog.length - ptsA;
+  const colors = sideColors(t);
 
   // Brak czasu dla ręcznie wpisanych wyników (finalSetsOverride) — nie ma tam
   // żadnych znaczników czasu do policzenia.
@@ -122,22 +127,31 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
               {tr("summary.statsTitle")}
             </div>
             <div style={{ display: "flex", padding: "8px 14px", fontSize: 12, fontWeight: 800, color: t.textMuted }}>
-              <span style={{ flex: 1 }}>{name1}</span>
-              <span style={{ width: 120, textAlign: "center" }}> </span>
-              <span style={{ flex: 1, textAlign: "right" }}>{name2}</span>
+              <span style={{ flex: 1, color: colors.a }}>{name1}</span>
+              <span style={{ flex: 1, textAlign: "right", color: colors.b }}>{name2}</span>
             </div>
+            <div style={{ display: "flex", justifyContent: "center", padding: "4px 0 10px" }}>
+              <Donut a={ptsA} b={ptsB} label={tr("summary.pointsShare")} />
+            </div>
+            {bp && (
+              <StatRow label={tr("summary.bpConverted")} a={bp.team1.opp ? bp.team1.conv / bp.team1.opp : 0} b={bp.team2.opp ? bp.team2.conv / bp.team2.opp : 0}
+                aText={`${bp.team1.conv}/${bp.team1.opp}`} bText={`${bp.team2.conv}/${bp.team2.opp}`} />
+            )}
             {STAT_ROWS.map(([key, labelKey]) => (
-              <div key={key} style={{ display: "flex", alignItems: "center", padding: "6px 14px", borderTop: `1px solid ${t.border}` }}>
-                <span style={{ flex: 1, fontWeight: 700 }}>{stats.team1[key]}</span>
-                <span style={{ width: 120, textAlign: "center", fontSize: 11, color: t.textMuted, textTransform: "uppercase" }}>{tr(labelKey)}</span>
-                <span style={{ flex: 1, textAlign: "right", fontWeight: 700 }}>{stats.team2[key]}</span>
-              </div>
+              <StatRow key={key} label={tr(labelKey)} a={stats.team1[key]} b={stats.team2[key]} higherIsBetter={key !== "doubleFaults" && key !== "unforcedErrors"} />
             ))}
             {avgRally != null && (
               <div style={{ display: "flex", justifyContent: "center", padding: "8px 14px", borderTop: `1px solid ${t.border}`, fontSize: 12, color: t.textSub }}>
                 {tr("summary.avgRallyLabel")} <strong style={{ marginLeft: 4 }}>{avgRally} {tr("summary.hitsUnit")}</strong>
               </div>
             )}
+          </Card>
+        )}
+
+        {hasPointDetail && (
+          <Card>
+            <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{tr("summary.flowTitle")}</div>
+            <FlowChart series={flowSeries(match.pointLog)} nameA={name1} nameB={name2} />
           </Card>
         )}
 

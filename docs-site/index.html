@@ -284,7 +284,7 @@
           <div class="tagline">Dokumentacja projektu</div>
         </div>
       </div>
-      <div class="version-pill"><span class="dot"></span>v0.14.0</div>
+      <div class="version-pill"><span class="dot"></span>v0.15.0</div>
     </header>
 
     <p class="lede">
@@ -548,20 +548,22 @@
 
     <section id="h2h">
       <div class="eyebrow">Statystyki</div>
-      <h2>Statystyki z rywalem (H2H)</h2>
+      <h2>Statystyki meczu, pary i zawodnika</h2>
       <p>
-        Ikona wykresu w chowanym menu na liście meczów (oraz przycisk „Statystyki z rywalem” w podsumowaniu singla) otwiera
-        ekran, na którym wybierasz zawodnika i jego rywala. <code>h2h.js</code> bierze z historii tylko ukończone single tych
-        dwóch osób (nazwiska porównywane bez względu na wielkość liter, spacje i polskie znaki) i liczy:
+        Statystyki są na trzech poziomach. <strong>Mecz</strong>: podsumowanie pokazuje udział wygranych punktów (kółko), break pointy,
+        asy, błędy, winnery i wykres przebiegu meczu (różnica punktów w czasie). <strong>Para</strong> i <strong>zawodnik</strong>:
+        ikona wykresu w chowanym menu (albo przycisk w podsumowaniu singla) otwiera ekran z dwoma zakładkami. <code>h2h.js</code>
+        bierze z historii ukończone single (nazwiska bez względu na wielkość liter, spacje i polskie znaki) i liczy:
       </p>
       <ul class="plain">
-        <li><strong>Mecze, sety i gemy</strong> — z każdego meczu, także zapisanego samym wynikiem. Super tie-break liczy się jako set, ale nie jako gemy.</li>
-        <li><strong>Punkty</strong> — tylko z meczów śledzonych punkt po punkcie: wygrane punkty, skuteczność przy własnym serwisie i przy returnie, asy, podwójne błędy, winnery i niewymuszone błędy.</li>
-        <li><strong>Seria, nawierzchnie, historia</strong> — aktualna seria zwycięstw, bilans wg nawierzchni i lista spotkań z wynikiem ustawionym z perspektywy wybranego zawodnika.</li>
+        <li><strong>Mecze, sety i gemy</strong> — także z meczów zapisanych samym wynikiem. Super tie-break liczy się jako set, ale nie jako gemy.</li>
+        <li><strong>Punkty</strong> — z meczów śledzonych punkt po punkcie: wygrane punkty, skuteczność przy własnym serwisie i returnie, break pointy wykorzystane i obronione (<code>computeBreakPoints()</code>; tie-break nie ma break pointów, a w grze bez przewag break pointem jest też decydujący punkt), asy, podwójne błędy, winnery i niewymuszone błędy.</li>
+        <li><strong>Wykresy</strong> — kółka udziału, paski proporcji przy każdej statystyce, ostatnie mecze jako kółka W/P, bilans według nawierzchni, paski gemów w historii i lista rywali z bilansem.</li>
       </ul>
       <p>
-        Statystyki można wysłać: przyciskiem <em>Udostępnij link</em> (strona <code>?h2h=</code>, dane zakodowane w adresie jak w karcie Pro,
-        bez backendu) albo jako zwykły tekst. Logika ma testy automatyczne (<code>npm test</code>, Vitest).
+        Wszystko można wysłać: <em>Udostępnij link</em> (strona <code>?h2h=</code> albo karta Pro, dane zakodowane w adresie, bez backendu) lub zwykły tekst.
+        Logika ma testy automatyczne (<code>npm test</code>, Vitest). Przy zakładaniu meczu zakładka Zasady ma przełącznik
+        <em>Decydujący set: pełny set / super tie-break</em>, niezależny od wybranego zestawu zasad.
       </p>
     </section>
 
@@ -807,7 +809,7 @@ npx cap sync android</code></pre>
 
     <footer>
       <span>Tennis Tracker — dokumentacja wewnętrzna projektu.</span>
-      <span>Wygenerowano dla wersji <span class="mono">v0.14.0</span></span>
+      <span>Wygenerowano dla wersji <span class="mono">v0.15.0</span></span>
     </footer>
   </main>
 </div>

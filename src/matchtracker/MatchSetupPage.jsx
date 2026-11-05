@@ -159,7 +159,14 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
   const [t2b, setT2b] = useState("");
 
   const [presetKey, setPresetKey] = useState(DEFAULT_PRESET_KEY);
-  const preset = PRESETS[presetKey];
+  // Decydujący set: null = tak jak w wybranym zestawie, albo wymuszony pełny
+  // set (z tie-breakiem) / super tie-break do 10.
+  const [finalSetMode, setFinalSetMode] = useState(null);
+  const basePreset = PRESETS[presetKey];
+  const preset = finalSetMode && basePreset.sets >= 3
+    ? { ...basePreset, finalSetSuperTiebreak: finalSetMode === "super" }
+    : basePreset;
+  const finalIsSuper = preset.finalSetSuperTiebreak;
 
   // null = jeszcze nie wybrano → apka zostaje neutralna, dopóki gracz nie
   // wskaże nawierzchni w zakładce "Gracze". Data meczu = dzisiejsza data z
@@ -302,8 +309,17 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
           <>
             <span style={styles.label}>{tr("setup.rulesLabel")}</span>
             {Object.values(PRESETS).map((p) => (
-              <RulesTile key={p.key} preset={p} active={p.key === presetKey} onClick={() => setPresetKey(p.key)} />
+              <RulesTile key={p.key} preset={p} active={p.key === presetKey} onClick={() => { setPresetKey(p.key); setFinalSetMode(null); }} />
             ))}
+            {basePreset.sets >= 3 && (
+              <>
+                <span style={styles.label}>{tr("setup.finalSetLabel")}</span>
+                <div style={{ display: "flex", gap: 4, padding: 3, background: t.tonal, borderRadius: 999 }}>
+                  <TabBtn active={!finalIsSuper} onClick={() => setFinalSetMode("full")}>{tr("setup.finalSetFull")}</TabBtn>
+                  <TabBtn active={finalIsSuper} onClick={() => setFinalSetMode("super")}>{tr("setup.finalSetSuper")}</TabBtn>
+                </div>
+              </>
+            )}
           </>
         )}
 
