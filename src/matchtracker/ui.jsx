@@ -139,10 +139,18 @@ export function FullScreen({ children }) {
 }
 
 export function ScrollBody({ children, style }) {
+  // Dolny odstęp strony (np. padding: 16) zawsze powiększamy o dolną strefę
+  // bezpieczną, żeby ostatnie przyciski nie chowały się pod paskiem nawigacji
+  // (3 przyciski) — samo `padding` ze `style` nadpisywało wcześniej ten odstęp.
+  const { padding, paddingBottom, ...rest } = style || {};
+  const base = typeof padding === "number" ? padding : 0;
+  const bottom = typeof paddingBottom === "number" ? paddingBottom : base;
   return (
     <div style={{
       flex: 1, minHeight: 0, overflowY: "auto",
-      paddingBottom: "env(safe-area-inset-bottom, 0px)", ...style,
+      ...(padding != null ? { padding } : {}),
+      ...rest,
+      paddingBottom: `calc(${bottom}px + env(safe-area-inset-bottom, 0px))`,
     }}>
       {children}
     </div>

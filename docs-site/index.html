@@ -262,7 +262,8 @@
     <a href="#debel">Serwis w deblu</a>
     <a href="#udostepnianie">Udostępnianie</a>
     <a href="#zawodnicy">Zawodnicy</a>
-    <a href="#h2h">Statystyki z rywalem</a>
+    <a href="#h2h">Statystyki</a>
+    <a href="#aktualizacje">Aktualizacje</a>
     <a href="#rywalizacje">Rywalizacje drużynowe</a>
     <a href="#backup">Kopia zapasowa</a>
     <a href="#wyglad">Wygląd i ikona</a>
@@ -284,7 +285,7 @@
           <div class="tagline">Dokumentacja projektu</div>
         </div>
       </div>
-      <div class="version-pill"><span class="dot"></span>v0.15.0</div>
+      <div class="version-pill"><span class="dot"></span>v0.16.0</div>
     </header>
 
     <p class="lede">
@@ -552,7 +553,7 @@
       <p>
         Statystyki są na trzech poziomach. <strong>Mecz</strong>: podsumowanie pokazuje udział wygranych punktów (kółko), break pointy,
         asy, błędy, winnery i wykres przebiegu meczu (różnica punktów w czasie). <strong>Para</strong> i <strong>zawodnik</strong>:
-        ikona wykresu w chowanym menu (albo przycisk w podsumowaniu singla) otwiera ekran z dwoma zakładkami. <code>h2h.js</code>
+        osobny chip z ikoną wykresu w nagłówku listy (zawsze widoczny, obok menu; jest też przycisk w podsumowaniu singla) otwiera ekran z dwoma zakładkami. <code>h2h.js</code>
         bierze z historii ukończone single (nazwiska bez względu na wielkość liter, spacje i polskie znaki) i liczy:
       </p>
       <ul class="plain">
@@ -564,6 +565,18 @@
         Wszystko można wysłać: <em>Udostępnij link</em> (strona <code>?h2h=</code> albo karta Pro, dane zakodowane w adresie, bez backendu) lub zwykły tekst.
         Logika ma testy automatyczne (<code>npm test</code>, Vitest). Przy zakładaniu meczu zakładka Zasady ma przełącznik
         <em>Decydujący set: pełny set / super tie-break</em>, niezależny od wybranego zestawu zasad.
+      </p>
+    </section>
+
+    <section id="aktualizacje">
+      <div class="eyebrow">Aktualizacje</div>
+      <h2>Automatyczna aktualizacja aplikacji</h2>
+      <p>
+        Po uruchomieniu aplikacja (tylko wersja na Androida) pyta GitHub Releases o najnowsze wydanie. Numer wydania <code>vNN</code> jest tym samym
+        co <code>versionCode</code> zbudowanego APK, więc wystarczy porównać dwie liczby. Gdy jest nowsze, na liście meczów pojawia się pasek z przyciskami
+        <em>Zaktualizuj</em> i <em>Później</em>. Natywna wtyczka <code>UpdaterPlugin.java</code> pobiera APK do pamięci podręcznej z paskiem postępu
+        i uruchamia systemowy instalator; Android prosi o potwierdzenie, a przy pierwszej aktualizacji o jednorazowe zezwolenie
+        „instaluj nieznane aplikacje” dla Tennis Trackera. Aktualizacja instaluje się w miejscu, bo APK jest zawsze podpisany tym samym kluczem.
       </p>
     </section>
 
@@ -809,7 +822,7 @@ npx cap sync android</code></pre>
 
     <footer>
       <span>Tennis Tracker — dokumentacja wewnętrzna projektu.</span>
-      <span>Wygenerowano dla wersji <span class="mono">v0.15.0</span></span>
+      <span>Wygenerowano dla wersji <span class="mono">v0.16.0</span></span>
     </footer>
   </main>
 </div>

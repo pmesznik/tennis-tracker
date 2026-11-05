@@ -19,7 +19,7 @@ function Title({ children }) {
 
 // Wspólny blok statystyk: `h` z computeH2H albo computePlayerStats, `nameA` i
 // `nameB` to podpisy stron.
-function StatsBlock({ h, nameA, nameB }) {
+function StatsBlock({ h, nameA, nameB, playerMode }) {
   const { t } = useThemeCtx();
   const { lang, t: tr } = useLang();
   const c = sideColors(t);
@@ -103,8 +103,8 @@ function StatsBlock({ h, nameA, nameB }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 5 }}>
               <span style={{ color: t.textSub, flexShrink: 0 }}>{m.date}{m.surface ? ` · ${surfaceLabel(lang, m.surface)}` : ""}</span>
               <span style={{ fontFamily: t.fontScore, fontSize: 16, fontWeight: 700, color: t.text, textAlign: "right" }}>{m.sets.join("  ")}</span>
-              <span style={{ width: 70, textAlign: "right", fontSize: 11, fontWeight: 700, color: m.winner === "a" ? c.a : c.b, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {m.winner === "a" ? nameA : m.winner === "b" ? nameB : ""}
+              <span style={{ maxWidth: 110, minWidth: 60, textAlign: "right", fontSize: 11, fontWeight: 700, color: m.winner === "a" ? c.a : c.b, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {m.winner === "a" ? nameA : m.winner === "b" ? (playerMode ? m.opponent : nameB) : ""}
               </span>
             </div>
             <MiniBar a={m.games[0]} b={m.games[1]} />
@@ -176,7 +176,7 @@ export default function H2HPage({ initialA, initialB, onBack }) {
 
             {h && h.total > 0 && (
               <>
-                <StatsBlock h={h} nameA={pair ? h.nameA : h.name} nameB={pair ? h.nameB : tr("h2h.allOpponents")} />
+                <StatsBlock playerMode={!pair} h={h} nameA={pair ? h.nameA : h.name} nameB={pair ? h.nameB : tr("h2h.allOpponents")} />
                 {player && player.opponents.length > 0 && (
                   <Card>
                     <Title>{tr("h2h.opponentsTitle")}</Title>

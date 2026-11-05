@@ -6,6 +6,7 @@ import { APP_NAME, APP_VERSION } from "./version.js";
 import MatchListPage from "./matchtracker/MatchListPage.jsx";
 import MatchSetupPage from "./matchtracker/MatchSetupPage.jsx";
 import MatchTrackerPage from "./matchtracker/MatchTrackerPage.jsx";
+import UpdateBanner from "./UpdateBanner.jsx";
 import MatchSummaryPage from "./matchtracker/MatchSummaryPage.jsx";
 import H2HPage from "./matchtracker/H2HPage.jsx";
 import BackupModal from "./matchtracker/BackupModal.jsx";
@@ -288,6 +289,15 @@ export default function App() {
                 <img src={appIcon} width={32} height={32} alt="" style={{ borderRadius: 9, flexShrink: 0 }} />
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", opacity: menuOpen ? 0 : 1, transition: `opacity .2s ${t.ease}` }}>{APP_NAME}</span>
               </span>
+              <button onClick={() => setView({ name: "h2h" })} aria-label={langCtx.t("h2h.iconTitle")} title={langCtx.t("h2h.iconTitle")}
+                tabIndex={menuOpen ? -1 : 0} style={{
+                  width: 40, height: 40, borderRadius: "50%", cursor: "pointer", flexShrink: 0, marginLeft: "auto", marginRight: 8, padding: 0,
+                  background: t.tonalStrong, color: t.accent, border: `1px solid ${t.accent}66`,
+                  display: "grid", placeItems: "center", boxShadow: t.elev1,
+                  opacity: menuOpen ? 0 : 1, pointerEvents: menuOpen ? "none" : "auto", transition: `opacity .2s ${t.ease}`,
+                }}>
+                <Icon name="stats" size={21} />
+              </button>
               <div ref={menuRef} style={{ position: "relative", width: 42, height: 42, flexShrink: 0 }}>
                 <div style={{
                   position: "absolute", right: 48, top: "50%", transform: "translateY(-50%)",
@@ -302,9 +312,6 @@ export default function App() {
                   </button>
                   <button onClick={() => { setMenuOpen(false); setView({ name: "tieList" }); }} aria-label={langCtx.t("tie.iconTitle")} title={langCtx.t("tie.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
                     <Icon name="trophy" size={20} />
-                  </button>
-                  <button onClick={() => { setMenuOpen(false); setView({ name: "h2h" }); }} aria-label={langCtx.t("h2h.iconTitle")} title={langCtx.t("h2h.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
-                    <Icon name="stats" size={20} />
                   </button>
                   <button onClick={() => { setMenuOpen(false); setShowPalette(true); }} aria-label={langCtx.t("palette.iconTitle")} title={langCtx.t("palette.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
                     <Icon name="palette" size={20} />
@@ -330,6 +337,7 @@ export default function App() {
                 </button>
               </div>
             </nav>
+            <UpdateBanner />
             <MatchListPage
               key={listVersion}
               onNewMatch={() => setView({ name: "setup", mode: "track" })}
