@@ -21,7 +21,7 @@ function buildLivePayload(match, score) {
     sets: buildSetRow(match.rules, score),
     gameA: score.game?.a ?? null,
     gameB: score.game?.b ?? null,
-    server: score.server,
+    server: match.initialServer ? score.server : null, // przed wyborem serwującego nikt jeszcze nie serwuje
     matchWinner: score.matchWinner,
     sf: match.surface || null,
     d: match.date || null,
@@ -144,6 +144,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     return (
       <FullScreen>
         <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} />
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 16px 0" }}>{liveShareButton}</div>
         <div style={{ padding: 16, textAlign: "center", fontSize: 15, fontWeight: 700, color: t.textSub }}>
           {tr("tracker.whoServes")}
         </div>
@@ -198,6 +199,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     return (
       <FullScreen>
         <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} />
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 16px 0" }}>{liveShareButton}</div>
         <div style={{ padding: 16, textAlign: "center", fontSize: 15, fontWeight: 700, color: t.textSub }}>
           {tr("tracker.whoServesOtherTeam", { team: teamName })}
         </div>
