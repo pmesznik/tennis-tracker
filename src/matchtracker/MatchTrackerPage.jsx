@@ -9,7 +9,8 @@ import { computeScore, formatSetsString, buildSetRow, teamLabel, otherTeam, curr
 import { shareMatch, buildLiveShareUrl } from "./shareLink.js";
 import { publishLiveScore } from "./liveSync.js";
 import { getStoredPalette } from "../theme.js";
-import { EditNamesButton, EditNamesModal, FinalSetModal } from "./TrackerModals.jsx";
+import { MoreButton, MatchOptionsModal, EditNamesModal, EndMatchModal, FinalSetModal } from "./TrackerModals.jsx";
+import { earlySetsRow } from "./earlyEnd.js";
 import { buildPlayerIndex, canonicalName } from "./players.js";
 import { cleanName } from "./nameKey.js";
 
@@ -21,11 +22,11 @@ function buildLivePayload(match, score) {
   return {
     t1: (match.team1?.names || []).filter(Boolean),
     t2: (match.team2?.names || []).filter(Boolean),
-    sets: buildSetRow(match.rules, score),
+    sets: match.endReason ? earlySetsRow(match) : buildSetRow(match.rules, score),
     gameA: score.game?.a ?? null,
     gameB: score.game?.b ?? null,
     server: match.initialServer ? (score.pointServer ?? score.server) : null, // przed wyborem serwującego nikt jeszcze nie serwuje
-    matchWinner: score.matchWinner,
+    matchWinner: match.resultWinner || score.matchWinner,
     sf: match.surface || null,
     d: match.date || null,
     pal: getStoredPalette() || "classic",
@@ -39,6 +40,8 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   const [stage, setStage] = useState(INITIAL_STAGE);
   const [now, setNow] = useState(() => Date.now());
   const [editingNames, setEditingNames] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [endingMatch, setEndingMatch] = useState(false);
 
   // Cała apka przebarwia się na nawierzchnię tego meczu, dopóki go oglądamy.
   useEffect(() => {
@@ -110,6 +113,15 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     setMatch(updated);
   };
 
+  // Debel: przed każdym kolejnym setem para wskazuje, kto serwuje pierwszy w jej
+  // pierwszym gemie serwisowym tego seta (kolejność wolno zmienić między setami).
+  const handlePickSetServer = (setIdx, team, playerName) => {
+    const prev = match.serverOrderBySet || {};
+    const serverOrderBySet = { ...prev, [setIdx]: { ...(prev[setIdx] || {}), [team]: [playerName, otherPlayerInTeam(team, playerName)] } };
+    const updated = storage.updateMatch(match.id, { serverOrderBySet });
+    setMatch(updated);
+  };
+
   const handleShareLive = () => {
     let m = match;
     if (!m.liveShareEnabled) {
@@ -159,6 +171,10 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     if (match.serverOrder) {
       patch.serverOrder = Object.fromEntries(Object.entries(match.serverOrder).map(([team, arr]) => [team, arr.map((nm) => rename.get(nm) || nm)]));
     }
+    if (match.serverOrderBySet) {
+      patch.serverOrderBySet = Object.fromEntries(Object.entries(match.serverOrderBySet).map(([k, teams]) => [k,
+        Object.fromEntries(Object.entries(teams).map(([team, arr]) => [team, arr.map((nm) => rename.get(nm) || nm)]))]));
+    }
     const updated = storage.updateMatch(match.id, patch);
     setMatch(updated);
     setEditingNames(false);
@@ -175,9 +191,33 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     }
   };
 
-  const namesButton = <EditNamesButton onClick={() => setEditingNames(true)} />;
-  const namesModal = editingNames && (
-    <EditNamesModal names={{ team1: match.team1.names || [], team2: match.team2.names || [] }} onSave={handleSaveNames} onClose={() => setEditingNames(false)} />
+  // Krecz / walkower / dyskwalifikacja: mecz kończy się przed czasem, wygrywa
+  // rywal; punkty zagrane do tej chwili zostają w statystykach.
+  const handleEndEarly = (reason, loserTeam) => {
+    const updated = storage.updateMatch(match.id, { status: "completed", endReason: reason, resultWinner: otherTeam(loserTeam), endedAt: Date.now() });
+    setMatch(updated);
+    setEndingMatch(false);
+    if (updated.liveShareEnabled && updated.initialServer) {
+      publishLiveScore(updated.id, buildLivePayload(updated, computeScore(updated.rules, updated.pointLog, updated.initialServer || TEAM1, updated.startedAt)));
+    }
+    onFinished(updated);
+  };
+
+  const namesButton = <MoreButton onClick={() => setOptionsOpen(true)} />;
+  const namesModal = (
+    <>
+      {optionsOpen && (
+        <MatchOptionsModal
+          onEditNames={() => { setOptionsOpen(false); setEditingNames(true); }}
+          onEndEarly={() => { setOptionsOpen(false); setEndingMatch(true); }}
+          onClose={() => setOptionsOpen(false)}
+        />
+      )}
+      {editingNames && (
+        <EditNamesModal names={{ team1: match.team1.names || [], team2: match.team2.names || [] }} onSave={handleSaveNames} onClose={() => setEditingNames(false)} />
+      )}
+      {endingMatch && <EndMatchModal labels={{ team1: name1, team2: name2 }} onConfirm={handleEndEarly} onClose={() => setEndingMatch(false)} />}
+    </>
   );
   // Po 1:1 w setach (mecz do 2 wygranych) i przed pierwszym punktem decydującego seta.
   const needFinalSetChoice = rules.sets === 3 && !match.finalSetChosen && match.status === "in_progress" &&
@@ -255,6 +295,33 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <div style={{ flex: 1, display: "flex", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
           {names.map((nm, i) => (
             <button key={nm} onClick={() => handlePickOtherTeamServer(team, nm)} style={{
+              flex: 1, background: i === 0 ? t.bigA.bg : t.bigB.bg, color: i === 0 ? t.bigA.fg : t.bigB.fg, border: "none",
+              fontSize: 18, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
+            }}>{nm}<br /><span style={{ fontSize: 12, fontWeight: 500 }}>{tr("tracker.serves")}</span></button>
+          ))}
+        </div>
+        {namesModal}
+      </FullScreen>
+    );
+  }
+
+  // ── Debel: nowy set → każda para wskazuje serwującego na swój pierwszy gem ──
+  const setIdxNow = score.sets.length;
+  const gamesInSetNow = score.curSetGamesA + score.curSetGamesB;
+  if (match.isDoubles && setIdxNow >= 1 && score.server && !score.matchWinner && !score.game?.isTiebreak && gamesInSetNow <= 1 &&
+      currentGameHasNoPoints && !(match.serverOrderBySet?.[setIdxNow]?.[score.server])) {
+    const team = score.server;
+    const names = (team === TEAM1 ? match.team1.names : match.team2.names) || [];
+    const teamName = teamLabel(team, match.team1.names, match.team2.names, tr("common.player1"), tr("common.player2"));
+    return (
+      <FullScreen>
+        <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={namesButton} />
+        <div style={{ padding: 16, textAlign: "center", fontSize: 15, fontWeight: 700, color: t.textSub }}>
+          {tr("tracker.whoServesSet", { n: setIdxNow + 1, team: teamName })}
+        </div>
+        <div style={{ flex: 1, display: "flex", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+          {names.map((nm, i) => (
+            <button key={nm} onClick={() => handlePickSetServer(setIdxNow, team, nm)} style={{
               flex: 1, background: i === 0 ? t.bigA.bg : t.bigB.bg, color: i === 0 ? t.bigA.fg : t.bigB.fg, border: "none",
               fontSize: 18, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
             }}>{nm}<br /><span style={{ fontSize: 12, fontWeight: 500 }}>{tr("tracker.serves")}</span></button>

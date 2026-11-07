@@ -11,6 +11,7 @@ import { computeScore } from "./scoringEngine.js";
 import { computeStats, computeBreakPoints } from "./stats.js";
 
 import { normName } from "./nameKey.js";
+import { earlyResult } from "./earlyEnd.js";
 export { normName };
 
 // Strony meczu jako tablice nazwisk: single (po jednym nazwisku, bez debla)
@@ -29,6 +30,7 @@ const keyOfLabel = (label) => teamKey(String(label).split(" / "));
 
 // Sety meczu jako [{a,b,isSuperTiebreak,tiebreak?}] oraz zwycięzca ("team1"/"team2"/null).
 function matchSets(m) {
+  if (m.endReason) return earlyResult(m);
   if (m.finalSetsOverride) {
     const sets = m.finalSetsOverride;
     let a = 0, b = 0;
@@ -148,7 +150,7 @@ function aggregate(matches, mode, pick) {
     for (const s of sets) {
       const sa = aIsTeam1 ? s.a : s.b;
       const sb = aIsTeam1 ? s.b : s.a;
-      if (sa > sb) a.setsWon++; else if (sb > sa) b.setsWon++;
+      if (!s.partial) { if (sa > sb) a.setsWon++; else if (sb > sa) b.setsWon++; }
       if (!s.isSuperTiebreak) { a.gamesWon += sa; b.gamesWon += sb; mga += sa; mgb += sb; }
       const tb = s.tiebreak ? `(${Math.min(s.tiebreak.a, s.tiebreak.b)})` : "";
       oriented.push(s.isSuperTiebreak ? `[${sa}-${sb}]` : `${sa}-${sb}${tb}`);

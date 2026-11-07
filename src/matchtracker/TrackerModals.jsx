@@ -92,3 +92,85 @@ export function FinalSetModal({ superTb, superTo, onPick }) {
     </Sheet>
   );
 }
+
+// Jeden przycisk "więcej" w pasku meczu zamiast kilku małych (ołówek, flaga).
+export function MoreButton({ onClick }) {
+  const { t } = useThemeCtx();
+  const { t: tr } = useLang();
+  return (
+    <button onClick={onClick} aria-label={tr("tracker.options")} title={tr("tracker.options")} style={{
+      width: 40, height: 40, borderRadius: "50%", border: "none", flexShrink: 0,
+      background: t.tonal, color: t.text, cursor: "pointer", display: "grid", placeItems: "center", padding: 0,
+    }}><Icon name="more" size={20} /></button>
+  );
+}
+
+export function MatchOptionsModal({ onEditNames, onEndEarly, onClose }) {
+  const { t } = useThemeCtx();
+  const { t: tr } = useLang();
+  const Row = ({ icon, label, desc, onClick }) => (
+    <button onClick={onClick} style={{
+      width: "100%", display: "flex", alignItems: "center", gap: 14, textAlign: "left", cursor: "pointer", fontFamily: "inherit",
+      border: `1px solid ${t.borderStrong}`, background: t.surfaceElevated, borderRadius: t.rMd,
+      padding: "12px 14px", marginBottom: 10, minHeight: 64, color: t.text,
+    }}>
+      <Icon name={icon} size={22} />
+      <span>
+        <span style={{ display: "block", fontSize: 15, fontWeight: 650 }}>{label}</span>
+        <span style={{ display: "block", fontSize: 12, color: t.textSub, marginTop: 2 }}>{desc}</span>
+      </span>
+    </button>
+  );
+  return (
+    <Sheet title={tr("tracker.options")} onClose={onClose}>
+      <Row icon="edit" label={tr("tracker.editNames")} desc={tr("tracker.editNamesShort")} onClick={onEditNames} />
+      <Row icon="flag" label={tr("tracker.endEarly")} desc={tr("tracker.endEarlyShort")} onClick={onEndEarly} />
+    </Sheet>
+  );
+}
+
+/**
+ * @param labels { team1: string, team2: string } nazwy stron
+ * @param onConfirm (reason, loserTeam) => void  — loserTeam to strona, która się wycofała / nie stawiła / została zdyskwalifikowana
+ */
+export function EndMatchModal({ labels, onConfirm, onClose }) {
+  const { t, styles } = useThemeCtx();
+  const { t: tr } = useLang();
+  const [reason, setReason] = useState("retired");
+  const [loser, setLoser] = useState(null);
+  const reasons = [
+    ["retired", tr("tracker.reasonRetired")],
+    ["walkover", tr("tracker.reasonWalkover")],
+    ["disqualified", tr("tracker.reasonDisqualified")],
+  ];
+  const side = (team) => (
+    <button key={team} onClick={() => setLoser(team)} style={{
+      flex: 1, minHeight: 56, padding: "8px 10px", borderRadius: t.rMd, cursor: "pointer", fontFamily: "inherit",
+      fontSize: 14, fontWeight: 700, color: loser === team ? t.accent : t.text,
+      border: `2px solid ${loser === team ? t.accent : t.borderStrong}`,
+      background: loser === team ? `${t.accent}18` : t.surfaceElevated,
+    }}>{loser === team ? "✓ " : ""}{labels[team]}</button>
+  );
+  const winnerLabel = loser ? labels[loser === "team1" ? "team2" : "team1"] : null;
+  return (
+    <Sheet title={tr("tracker.endEarly")} onClose={onClose}>
+      <span style={styles.label}>{tr("tracker.endReason")}</span>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+        {reasons.map(([k, label]) => (
+          <button key={k} onClick={() => setReason(k)} aria-pressed={reason === k} style={{
+            minHeight: 40, padding: "8px 14px", borderRadius: 999, border: "none", cursor: "pointer", fontFamily: "inherit",
+            background: reason === k ? t.tonalStrong : t.tonal, color: reason === k ? t.text : t.textSub, fontWeight: reason === k ? 700 : 500, fontSize: 14,
+          }}>{label}</button>
+        ))}
+      </div>
+      <div style={{ fontSize: 12, color: t.textSub, margin: "6px 0 14px", lineHeight: 1.45 }}>{tr(`tracker.reasonHint.${reason}`)}</div>
+      <span style={styles.label}>{tr(`tracker.whoLoses.${reason}`)}</span>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>{side("team1")}{side("team2")}</div>
+      {winnerLabel && <div style={{ fontSize: 13, color: t.textSub, marginBottom: 12 }}>{tr("tracker.winnerIs", { name: winnerLabel })}</div>}
+      <div style={{ display: "flex", gap: 10 }}>
+        <button style={{ ...styles.secondaryBtn, flex: 1 }} onClick={onClose}>{tr("common.cancel")}</button>
+        <button style={{ ...styles.primaryBtn, flex: 1, opacity: loser ? 1 : 0.45 }} disabled={!loser} onClick={() => onConfirm(reason, loser)}>{tr("tracker.endConfirm")}</button>
+      </div>
+    </Sheet>
+  );
+}

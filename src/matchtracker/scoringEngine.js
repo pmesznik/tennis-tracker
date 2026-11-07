@@ -263,7 +263,21 @@ export function teamServiceTurnIndex(team, initialServer, completedGames) {
 // punkcie między WSZYSTKIMI czterema zawodnikami, czego tu nie liczymy — w tej
 // sytuacji funkcja zwraca null, a UI pokazuje tylko drużynę (jak dotychczas).
 export function currentServerPlayerName(match, score) {
-  if (!match.isDoubles || !match.serverOrder || !score.server || score.game?.isTiebreak) return null;
+  if (!match.isDoubles || !score.server || score.game?.isTiebreak) return null;
+  // Para może zmienić kolejność serwisu przed każdym kolejnym setem
+  // (match.serverOrderBySet[numerSeta][drużyna]); wtedy liczymy gemy serwisowe
+  // od początku tego seta, inaczej obowiązuje kolejność z początku meczu.
+  const setIdx = score.sets.length;
+  const setOrder = match.serverOrderBySet?.[setIdx]?.[score.server];
+  if (setOrder && setOrder.length >= 2) {
+    const initial = match.initialServer || TEAM1;
+    const gamesInSet = (score.curSetGamesA ?? 0) + (score.curSetGamesB ?? 0);
+    const completed = score.completedGames ?? 0;
+    const firstOfSet = (completed - gamesInSet) % 2 === 0 ? initial : otherTeam(initial);
+    const turn = score.server === firstOfSet ? Math.ceil((gamesInSet + 1) / 2) : Math.floor((gamesInSet + 1) / 2);
+    return setOrder[(turn - 1) % 2];
+  }
+  if (!match.serverOrder) return null;
   const order = match.serverOrder[score.server];
   if (!order || order.length < 2) return null;
   const turnIndex = teamServiceTurnIndex(score.server, match.initialServer || TEAM1, score.completedGames ?? 0);

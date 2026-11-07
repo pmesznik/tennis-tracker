@@ -285,7 +285,7 @@
           <div class="tagline">Dokumentacja projektu</div>
         </div>
       </div>
-      <div class="version-pill"><span class="dot"></span>v0.18.0</div>
+      <div class="version-pill"><span class="dot"></span>v0.19.0</div>
     </header>
 
     <p class="lede">
@@ -581,6 +581,18 @@
       </p>
     </section>
 
+    <section id="przedwczesny-koniec">
+      <div class="eyebrow">Przebieg meczu</div>
+      <h2>Krecz, walkower, dyskwalifikacja i serwis w deblu</h2>
+      <p>
+        Menu z trzema kropkami w pasku meczu na żywo ma opcję „Zakończ mecz przed czasem”. Wybierasz powód (krecz, walkower, dyskwalifikacja) i stronę, która się wycofała,
+        nie stawiła się albo została zdyskwalifikowana; wygrywa jej rywal (pola <code>endReason</code> i <code>resultWinner</code>, logika w <code>earlyEnd.js</code>).
+        Krecz i dyskwalifikacja zapisują wynik do chwili przerwania (trwający set liczy się jako gemy, nie jako wygrany set), walkower liczy się jako zwycięstwo bez setów, gemów i punktów.
+        Mecz wchodzi do statystyk i H2H, a z podsumowania można go wznowić. W deblu przed każdym kolejnym setem para wskazuje, kto serwuje pierwszy
+        (<code>serverOrderBySet</code>), bo przepisy pozwalają zmienić kolejność serwisu między setami.
+      </p>
+    </section>
+
     <section id="aktualizacje">
       <div class="eyebrow">Aktualizacje</div>
       <h2>Automatyczna aktualizacja aplikacji</h2>
@@ -835,7 +847,7 @@ npx cap sync android</code></pre>
 
     <footer>
       <span>Tennis Tracker — dokumentacja wewnętrzna projektu.</span>
-      <span>Wygenerowano dla wersji <span class="mono">v0.18.0</span></span>
+      <span>Wygenerowano dla wersji <span class="mono">v0.19.0</span></span>
     </footer>
   </main>
 </div>

@@ -21,6 +21,7 @@ function toBase64Url(str) {
 
 export function deriveWinner(match) {
   if (match.status !== "completed") return null;
+  if (match.endReason) return match.resultWinner || null;
   if (match.finalSetsOverride) {
     let a = 0, b = 0;
     for (const s of match.finalSetsOverride) {

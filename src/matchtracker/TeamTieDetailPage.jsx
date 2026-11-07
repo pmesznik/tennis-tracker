@@ -5,9 +5,11 @@ import { useLang } from "../i18n.js";
 import { Card, TopBar, FullScreen, ScrollBody, Icon } from "./ui.jsx";
 import * as storage from "./storage.js";
 import { computeScore, buildSetRow, teamLabel } from "./scoringEngine.js";
+import { earlySetsRow } from "./earlyEnd.js";
 import * as ties from "./teamTies.js";
 
 function tieMatchSetsRow(match) {
+  if (match.endReason) return earlySetsRow(match);
   if (match.status === "completed" && match.finalSetsOverride) {
     return match.finalSetsOverride.map((s) =>
       s.isSuperTiebreak ? `[${s.a}-${s.b}]` : s.tiebreak ? `${s.a}-${s.b}(${Math.min(s.tiebreak.a, s.tiebreak.b)})` : `${s.a}-${s.b}`

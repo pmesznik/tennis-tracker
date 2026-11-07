@@ -1,0 +1,33 @@
+// Tennis Tracker — mecz zakończony przed czasem: krecz (rezygnacja w trakcie),
+// walkower (rywal się nie stawił), dyskwalifikacja. Mecz dostaje pola
+// `endReason` ("retired" | "walkover" | "disqualified") i `resultWinner`
+// ("team1" | "team2"); punkty (pointLog) zostają, więc statystyki do chwili
+// przerwania nadal się liczą.
+import { computeScore, formatSetsString } from "./scoringEngine.js";
+
+export const END_REASONS = ["retired", "walkover", "disqualified"];
+
+// Wynik do chwili przerwania: ukończone sety + trwający set jako częściowy
+// ({partial:true}, nie liczy się jako wygrany set, ale gemy się liczą).
+// Walkower nie ma wyniku (brak setów).
+export function earlyResult(m) {
+  const sc = m.rules
+    ? computeScore(m.rules, m.pointLog || [], m.initialServer || "team1", m.startedAt)
+    : { sets: [], curSetGamesA: 0, curSetGamesB: 0 };
+  const sets = m.endReason === "walkover" ? [] : [...sc.sets];
+  if (m.endReason !== "walkover" && (sc.curSetGamesA || sc.curSetGamesB)) {
+    sets.push({ a: sc.curSetGamesA, b: sc.curSetGamesB, partial: true });
+  }
+  return { sets, winner: m.resultWinner || null };
+}
+
+// Krótka etykieta do listy / udostępniania: "krecz", "w/o", "dyskw.".
+export const END_TAG = { retired: "krecz", walkover: "w/o", disqualified: "dyskw." };
+
+// Wiersz setów (tablica napisów) dla zakończonego przedwcześnie meczu.
+export function earlySetsRow(m) {
+  const { sets } = earlyResult(m);
+  const row = sets.map((s) => formatSetsString([s]));
+  row.push(END_TAG[m.endReason] || "");
+  return row.filter(Boolean);
+}

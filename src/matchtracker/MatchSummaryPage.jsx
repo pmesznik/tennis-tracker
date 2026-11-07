@@ -12,6 +12,7 @@ import { formatDuration, longestPoint, averagePointDurationMs } from "./time.js"
 import { computeStats, computeBreakPoints, flowSeries } from "./stats.js";
 import { StatRow, Donut, FlowChart, sideColors } from "./charts.jsx";
 import { renderStatsPng, shareStatsPng } from "./statsImage.js";
+import { earlySetsRow } from "./earlyEnd.js";
 
 const STAT_ROWS = [
   ["aces", "stat.aces"],
@@ -38,7 +39,10 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
 
   let setsRow;
   let score = null;
-  if (match.status === "completed" && match.finalSetsOverride) {
+  if (match.endReason) {
+    setsRow = earlySetsRow(match);
+    score = computeScore(match.rules, match.pointLog, match.initialServer || TEAM1, match.startedAt);
+  } else if (match.status === "completed" && match.finalSetsOverride) {
     setsRow = match.finalSetsOverride.map((s) => formatSetsString([s]));
   } else {
     score = computeScore(match.rules, match.pointLog, match.initialServer || TEAM1, match.startedAt);
@@ -67,6 +71,11 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
     shareStatsPng(png, "tennis-tracker-mecz.png", `${name1} – ${name2}: ${setsRow.join(" ")}`);
   };
 
+  const handleResume = () => {
+    storage.updateMatch(match.id, { status: "in_progress", endReason: null, resultWinner: null, endedAt: null });
+    onContinue(match.id);
+  };
+
   const handleDelete = () => {
     if (!confirm(tr("common.confirmDeleteMatch"))) return;
     storage.deleteMatch(match.id);
@@ -88,6 +97,11 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
             <div style={{ fontSize: 13, color: t.textSub, marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6 }}>
               <Icon name="calendar" size={15} /> {match.date}{match.surface ? ` · ${surfaceLabel(lang, match.surface)}` : ""}
             </div>
+            {match.endReason && (
+              <div style={{ fontSize: 13, color: t.textSub, marginTop: 8 }}>
+                {tr("summary.endedEarly", { reason: tr(`tracker.reason.${match.endReason}`), winner: match.resultWinner === TEAM1 ? name1 : name2 })}
+              </div>
+            )}
             {match.note && <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>{match.note}</div>}
           </div>
         </Card>
@@ -167,6 +181,9 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
           {match.status === "in_progress" && (
             <button style={styles.primaryBtn} onClick={() => onContinue(match.id)}><Icon name="play" size={22} />{tr("summary.continueMatch")}</button>
+          )}
+          {match.endReason && onContinue && (
+            <button style={styles.secondaryBtn} onClick={handleResume}><Icon name="undo" size={19} />{tr("summary.resumeMatch")}</button>
           )}
           <button
             style={styles.primaryBtn}

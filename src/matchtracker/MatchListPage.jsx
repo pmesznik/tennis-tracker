@@ -6,11 +6,13 @@ import { Card, ShareIcon, Icon } from "./ui.jsx";
 import ballDots from "../assets/ball-dots.svg";
 import * as storage from "./storage.js";
 import { computeScore, buildSetRow, teamLabel } from "./scoringEngine.js";
+import { earlySetsRow } from "./earlyEnd.js";
 import { shareMatch, buildShareUrl } from "./shareLink.js";
 import { clearLiveScore } from "./liveSync.js";
 import { removeMatchFromTie } from "./teamTies.js";
 
 function matchSetsRow(match) {
+  if (match.endReason) return earlySetsRow(match);
   if (match.status === "completed" && match.finalSetsOverride) {
     return match.finalSetsOverride.map((s) =>
       s.isSuperTiebreak ? `[${s.a}-${s.b}]` : s.tiebreak ? `${s.a}-${s.b}(${Math.min(s.tiebreak.a, s.tiebreak.b)})` : `${s.a}-${s.b}`
