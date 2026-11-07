@@ -151,7 +151,10 @@ function aggregate(matches, mode, pick) {
       const sa = aIsTeam1 ? s.a : s.b;
       const sb = aIsTeam1 ? s.b : s.a;
       if (!s.partial) { if (sa > sb) a.setsWon++; else if (sb > sa) b.setsWon++; }
-      if (!s.isSuperTiebreak) { a.gamesWon += sa; b.gamesWon += sb; mga += sa; mgb += sb; }
+      if (!s.isSuperTiebreak) {
+        const st = (!m.finalSetsOverride && m.rules?.setStartGames) || 0; // start seta od 2:2 itp.
+        a.gamesWon += sa - st; b.gamesWon += sb - st; mga += sa - st; mgb += sb - st;
+      }
       const tb = s.tiebreak ? `(${Math.min(s.tiebreak.a, s.tiebreak.b)})` : "";
       oriented.push(s.isSuperTiebreak ? `[${sa}-${sb}]` : `${sa}-${sb}${tb}`);
     }

@@ -15,7 +15,8 @@ export function earlyResult(m) {
     ? computeScore(m.rules, m.pointLog || [], m.initialServer || "team1", m.startedAt)
     : { sets: [], curSetGamesA: 0, curSetGamesB: 0 };
   const sets = m.endReason === "walkover" ? [] : [...sc.sets];
-  if (m.endReason !== "walkover" && (sc.curSetGamesA || sc.curSetGamesB)) {
+  const st = sc.setStartGames || 0;
+  if (m.endReason !== "walkover" && (sc.curSetGamesA !== st || sc.curSetGamesB !== st)) {
     sets.push({ a: sc.curSetGamesA, b: sc.curSetGamesB, partial: true });
   }
   return { sets, winner: m.resultWinner || null };

@@ -221,7 +221,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   // Po 1:1 w setach (mecz do 2 wygranych) i przed pierwszym punktem decydującego seta.
   const needFinalSetChoice = rules.sets === 3 && !match.finalSetChosen && match.status === "in_progress" &&
     score.sets.length === 2 && score.setsWonA === 1 && score.setsWonB === 1 &&
-    score.curSetGamesA === 0 && score.curSetGamesB === 0 && score.game?.a === "0" && score.game?.b === "0";
+    score.curSetGamesA === score.setStartGames && score.curSetGamesB === score.setStartGames && score.game?.a === "0" && score.game?.b === "0";
   const finalSetModal = needFinalSetChoice && (
     <FinalSetModal superTb={!!rules.finalSetSuperTiebreak} superTo={rules.finalSetSuperTiebreakTo} onPick={handlePickFinalSet} />
   );
@@ -306,7 +306,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
 
   // ── Debel: nowy set → każda para wskazuje serwującego na swój pierwszy gem ──
   const setIdxNow = score.sets.length;
-  const gamesInSetNow = score.curSetGamesA + score.curSetGamesB;
+  const gamesInSetNow = score.curSetGamesA + score.curSetGamesB - 2 * score.setStartGames;
   if (match.isDoubles && setIdxNow >= 1 && score.server && !score.matchWinner && !score.game?.isTiebreak && gamesInSetNow <= 1 &&
       currentGameHasNoPoints && !(match.serverOrderBySet?.[setIdxNow]?.[score.server])) {
     const team = score.server;

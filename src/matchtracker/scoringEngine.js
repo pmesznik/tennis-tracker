@@ -158,6 +158,10 @@ export function computeScore(rules, pointLog, initialServer = TEAM1, startedAt =
   const inTiebreakGame = () => curSetGamesA === rules.tiebreakAt && curSetGamesB === rules.tiebreakAt;
   const isSuperTiebreakSet = () =>
     rules.finalSetSuperTiebreak && isFinalSet() && curSetGamesA === 0 && curSetGamesB === 0;
+  // Turnieje juniorskie: każdy set (poza super tie-breakiem) zaczyna się od
+  // wyniku w gemach rules.setStartGames, np. 2:2.
+  const setStart = () => (rules.setStartGames && !(rules.finalSetSuperTiebreak && isFinalSet()) ? rules.setStartGames : 0);
+  curSetGamesA = setStart(); curSetGamesB = setStart();
 
   for (const pt of pointLog) {
     if (matchWinner) break; // punkty po zakończeniu meczu ignorujemy (nie powinny wystąpić)
@@ -170,7 +174,7 @@ export function computeScore(rules, pointLog, initialServer = TEAM1, startedAt =
         sets.push({ a: curPtsA, b: curPtsB, isSuperTiebreak: true, durationMs: durationSince(setStartTime, pt.t) });
         setStartTime = pt.t ?? setStartTime;
         if (curPtsA > curPtsB) setsWonA++; else setsWonB++;
-        curPtsA = 0; curPtsB = 0; curSetGamesA = 0; curSetGamesB = 0;
+        curPtsA = 0; curPtsB = 0; curSetGamesA = setStart(); curSetGamesB = setStart();
         completedGames++;
         if (setsWonA === setsToWinMatch) matchWinner = TEAM1;
         if (setsWonB === setsToWinMatch) matchWinner = TEAM2;
@@ -190,7 +194,7 @@ export function computeScore(rules, pointLog, initialServer = TEAM1, startedAt =
         sets.push({ a: curSetGamesA, b: curSetGamesB, isSuperTiebreak: false, tiebreak: { a: curPtsA, b: curPtsB }, durationMs: durationSince(setStartTime, pt.t) });
         setStartTime = pt.t ?? setStartTime;
         if (curSetGamesA > curSetGamesB) setsWonA++; else setsWonB++;
-        curSetGamesA = 0; curSetGamesB = 0; curPtsA = 0; curPtsB = 0;
+        curSetGamesA = setStart(); curSetGamesB = setStart(); curPtsA = 0; curPtsB = 0;
         completedGames++;
         tiebreakFirstServerForCurrentGame = null;
         if (setsWonA === setsToWinMatch) matchWinner = TEAM1;
@@ -211,7 +215,7 @@ export function computeScore(rules, pointLog, initialServer = TEAM1, startedAt =
         sets.push({ a, b, isSuperTiebreak: false, durationMs: durationSince(setStartTime, pt.t) });
         setStartTime = pt.t ?? setStartTime;
         if (a > b) setsWonA++; else setsWonB++;
-        curSetGamesA = 0; curSetGamesB = 0;
+        curSetGamesA = setStart(); curSetGamesB = setStart();
         if (setsWonA === setsToWinMatch) matchWinner = TEAM1;
         if (setsWonB === setsToWinMatch) matchWinner = TEAM2;
       }
@@ -247,6 +251,7 @@ export function computeScore(rules, pointLog, initialServer = TEAM1, startedAt =
     sets,
     setsWonA, setsWonB,
     curSetGamesA, curSetGamesB,
+    setStartGames: setStart(),
     server,
     // Kto naprawdę serwuje następny punkt: w gemie to samo co `server`, w
     // tie-breaku i super tie-breaku serwis zmienia się co dwa punkty.
@@ -288,7 +293,7 @@ function teamOrderInfo(match, score, team) {
   const setIdx = score.sets.length;
   const setOrder = match.serverOrderBySet?.[setIdx]?.[team];
   if (setOrder && setOrder.length >= 2) {
-    const gamesInSet = (score.curSetGamesA ?? 0) + (score.curSetGamesB ?? 0);
+    const gamesInSet = (score.curSetGamesA ?? 0) + (score.curSetGamesB ?? 0) - 2 * (score.setStartGames ?? 0);
     const firstOfSet = (completed - gamesInSet) % 2 === 0 ? initial : otherTeam(initial);
     const done = team === firstOfSet ? Math.ceil(gamesInSet / 2) : Math.floor(gamesInSet / 2);
     return { order: setOrder, done };

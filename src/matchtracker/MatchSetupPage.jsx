@@ -165,9 +165,12 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
   // set (z tie-breakiem) / super tie-break do 10.
   const [finalSetMode, setFinalSetMode] = useState(null);
   const basePreset = PRESETS[presetKey];
-  const preset = finalSetMode && basePreset.sets >= 3
+  const [startAt22, setStartAt22] = useState(false);
+  const composed = finalSetMode && basePreset.sets >= 3
     ? { ...basePreset, finalSetSuperTiebreak: finalSetMode === "super" }
     : basePreset;
+  // Turnieje juniorskie bywają grane od stanu 2:2 w każdym secie.
+  const preset = startAt22 ? { ...composed, setStartGames: 2 } : composed;
   const finalIsSuper = preset.finalSetSuperTiebreak;
 
   // null = jeszcze nie wybrano → apka zostaje neutralna, dopóki gracz nie
@@ -309,6 +312,11 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
             {Object.values(PRESETS).map((p) => (
               <RulesTile key={p.key} preset={p} active={p.key === presetKey} onClick={() => { setPresetKey(p.key); setFinalSetMode(null); }} />
             ))}
+            <span style={styles.label}>{tr("setup.startLabel")}</span>
+            <div style={{ display: "flex", gap: 4, padding: 3, background: t.tonal, borderRadius: 999, marginBottom: 16 }}>
+              <TabBtn active={!startAt22} onClick={() => setStartAt22(false)}>{tr("setup.start00")}</TabBtn>
+              <TabBtn active={startAt22} onClick={() => setStartAt22(true)}>{tr("setup.start22")}</TabBtn>
+            </div>
             {basePreset.sets >= 3 && (
               <>
                 <span style={styles.label}>{tr("setup.finalSetLabel")}</span>

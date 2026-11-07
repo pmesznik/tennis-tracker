@@ -189,6 +189,9 @@ const dict = {
     "backup.importSuccess": "Zaimportowano {n} meczów.",
     "backup.importError": "Nieprawidłowy plik kopii zapasowej.",
 
+    "setup.startLabel": "Start każdego seta",
+    "setup.start00": "Od 0:0",
+    "setup.start22": "Od 2:2 (juniorzy)",
     "setup.finalSetLabel": "Decydujący set",
     "setup.finalSetFull": "Pełny set",
     "setup.finalSetSuper": "Super tie-break",
@@ -464,6 +467,9 @@ const dict = {
     "backup.importSuccess": "Imported {n} matches.",
     "backup.importError": "Invalid backup file.",
 
+    "setup.startLabel": "Start of each set",
+    "setup.start00": "From 0:0",
+    "setup.start22": "From 2:2 (juniors)",
     "setup.finalSetLabel": "Deciding set",
     "setup.finalSetFull": "Full set",
     "setup.finalSetSuper": "Super tie-break",

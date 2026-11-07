@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { computeH2H } from "../src/matchtracker/h2h.js";
 import { deriveWinner } from "../src/matchtracker/shareLink.js";
 import { earlySetsRow } from "../src/matchtracker/earlyEnd.js";
-import { match, gamesLog, setSpec } from "./helpers.js";
+import { match, gamesLog, setSpec, rulesTb } from "./helpers.js";
 
 // Ala wygrała 1. set 6:2, w 2. secie prowadzi 3:1 i Ola się wycofała (krecz).
 const retired = () => {
@@ -33,5 +33,16 @@ describe("mecz zakończony przed czasem", () => {
     expect(h.b.matchesWon).toBe(1);
     expect(h.a.gamesWon + h.b.gamesWon).toBe(0);
     expect(deriveWinner(m)).toBe("team2");
+  });
+});
+
+describe("start seta od 2:2 w statystykach", () => {
+  it("gemy ze startu seta nie liczą się jako wygrane", () => {
+    const rules = { ...rulesTb, setStartGames: 2 };
+    const m = match({ rules, pointLog: gamesLog(["team1", "team1", "team1", "team1", "team1", "team1", "team1", "team1"]) });
+    const h = computeH2H([m], "Ala", "Ola");
+    expect(h.a.setsWon).toBe(2);
+    expect(h.a.gamesWon).toBe(8);
+    expect(h.b.gamesWon).toBe(0);
   });
 });
