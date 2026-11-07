@@ -10,6 +10,7 @@ import { buildPlayerIndex, suggestOpponents, canonicalName, getFavoritePlayers, 
 import { normName } from "./nameKey.js";
 import { manualRowsToSets } from "./matchEdit.js";
 import { addMatchToTie } from "./teamTies.js";
+import { getProfile } from "./profile.js";
 
 const DEPTHS = [
   { key: "basic", titleKey: "depth.basic.title", descKey: "depth.basic.desc" },
@@ -155,7 +156,12 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
   const [tab, setTab] = useState("players");
 
   const [isDoubles, setIsDoubles] = useState(false);
-  const [t1a, setT1a] = useState("");
+  // Główny zawodnik ze strony startowej jest od razu wpisany (nie w trybie
+  // „mecze innych osób" i nie w meczu drużynowym).
+  const [t1a, setT1a] = useState(() => {
+    const p = getProfile();
+    return p.name && !p.others && !tieContext ? p.name : "";
+  });
   const [t1b, setT1b] = useState("");
   const [t2a, setT2a] = useState("");
   const [t2b, setT2b] = useState("");

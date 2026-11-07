@@ -4,6 +4,7 @@ import { ThemeContext, themeForSurface, makeStyles, getStoredPalette, setStoredP
 import { LangContext, getStoredLang, setStoredLang, translate } from "./i18n.js";
 import { APP_NAME, APP_VERSION } from "./version.js";
 import MatchListPage from "./matchtracker/MatchListPage.jsx";
+import StartPage from "./matchtracker/StartPage.jsx";
 import MatchSetupPage from "./matchtracker/MatchSetupPage.jsx";
 import MatchTrackerPage from "./matchtracker/MatchTrackerPage.jsx";
 import UpdateBanner from "./UpdateBanner.jsx";
@@ -164,7 +165,7 @@ export default function App() {
     t: (key, vars) => translate(lang || "pl", key, vars),
   }), [lang]);
 
-  const [view, setView] = useState({ name: "list" });
+  const [view, setView] = useState({ name: "start" });
   const [listVersion, setListVersion] = useState(0);
   const [showBackup, setShowBackup] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
@@ -173,6 +174,10 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const pickPalette = (p) => { setStoredPalette(p); setPalette(p); setShowPalette(false); };
+  const goToStart = () => {
+    setView({ name: "start" });
+    setActiveSurface(null);
+  };
   const goToList = () => {
     setView({ name: "list" });
     setListVersion((v) => v + 1);
@@ -188,7 +193,8 @@ export default function App() {
     window.appBack = () => {
       if (popBack()) return true;
       const v = viewRef.current;
-      if (v.name === "list") return false;
+      if (v.name === "start") return false;
+      if (v.name === "list") { goToStart(); return true; }
       if (v.name === "setup" || v.name === "tracker" || v.name === "summary") {
         if (v.tieId) setView({ name: "tieDetail", tieId: v.tieId });
         else goToList();
@@ -282,6 +288,20 @@ export default function App() {
       `}</style>
 
       <div style={styles.app}>
+        {view.name === "start" && (
+          <StartPage
+            key={listVersion}
+            onNewMatch={() => setView({ name: "setup", mode: "track" })}
+            onHistory={goToList}
+            onStats={() => setView({ name: "h2h", fromStart: true })}
+            onMyStats={(name) => setView({ name: "h2h", a: name, fromStart: true })}
+            onOpenMatch={(m) => {
+              setActiveSurface(m.surface || null);
+              setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id } : { name: "summary", matchId: m.id });
+            }}
+          />
+        )}
+
         {view.name === "list" && (
           <>
             <nav style={styles.nav}>
@@ -393,6 +413,7 @@ export default function App() {
             initialB={view.b}
             initialDoubles={view.dbl}
             onBack={view.fromMatchId ? () => setView({ name: "summary", matchId: view.fromMatchId, tieId: view.tieId }) : goToList}
+            onBackHome={goToStart}
           />
         )}
 

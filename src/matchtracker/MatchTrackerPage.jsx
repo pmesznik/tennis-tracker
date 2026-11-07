@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
+import { getProfile, shouldSwapSides } from "./profile.js";
 import { TopBar, FullScreen, BigButton, Chip, TennisBall, ClockChip, ShareIcon, Icon } from "./ui.jsx";
 import ScoreBoard from "./scoreboard.jsx";
 import * as storage from "./storage.js";
@@ -226,6 +227,8 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     <FinalSetModal superTb={!!rules.finalSetSuperTiebreak} superTo={rules.finalSetSuperTiebreakTo} onPick={handlePickFinalSet} />
   );
 
+  // Główny zawodnik ze strony startowej ma guzik po wybranej stronie.
+  const swapSides = shouldSwapSides(getProfile(), match);
   // ── Ekran "Kto serwuje?" (tylko raz, na starcie meczu) ─────────────────────
   if (!match.initialServer) {
     return (
@@ -255,7 +258,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
             </div>
           </div>
         ) : (
-          <div style={{ flex: 1, display: "flex", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: swapSides ? "row-reverse" : "row", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
             <button onClick={() => handleSelectServer(TEAM1)} style={{
               flex: 1, background: t.bigA.bg, color: t.bigA.fg, border: "none",
               fontSize: 18, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
@@ -466,8 +469,11 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         {Header}
         {TopRow}
         <div style={{ flex: 1, minHeight: 0, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "row", gap: 12 }}>
-          <BigButton label={tr("tracker.pointFor", { name: name1 })} color={t.bigA.bg} textColor={t.bigA.fg} onClick={() => commitPoint(TEAM1)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
-          <BigButton label={tr("tracker.pointFor", { name: name2 })} color={t.bigB.bg} textColor={t.bigB.fg} onClick={() => commitPoint(TEAM2)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
+          {(swapSides ? [TEAM2, TEAM1] : [TEAM1, TEAM2]).map((tm) => (
+            <BigButton key={tm} label={tr("tracker.pointFor", { name: tm === TEAM1 ? name1 : name2 })}
+              color={tm === TEAM1 ? t.bigA.bg : t.bigB.bg} textColor={tm === TEAM1 ? t.bigA.fg : t.bigB.fg}
+              onClick={() => commitPoint(tm)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
+          ))}
         </div>
         {namesModal}{finalSetModal}
       </FullScreen>
@@ -572,8 +578,10 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 8 }}>
           {ROWS.map((row) => (
             <div key={row.key} style={{ flex: 1, display: "flex", gap: 8 }}>
-              <BigButton label={name1} sub={row.label} color={row.color} onClick={() => commitRallyEnd(TEAM1, row.key)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
-              <BigButton label={name2} sub={row.label} color={row.color} onClick={() => commitRallyEnd(TEAM2, row.key)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
+              {(swapSides ? [TEAM2, TEAM1] : [TEAM1, TEAM2]).map((tm) => (
+                <BigButton key={tm} label={tm === TEAM1 ? name1 : name2} sub={row.label} color={row.color}
+                  onClick={() => commitRallyEnd(tm, row.key)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
+              ))}
             </div>
           ))}
         </div>
