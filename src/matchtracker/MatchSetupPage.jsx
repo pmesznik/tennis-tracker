@@ -6,7 +6,8 @@ import { Card, TopBar, FullScreen, ScrollBody, Chip, Icon } from "./ui.jsx";
 import { pushBack } from "../backStack.js";
 import * as storage from "./storage.js";
 import { PRESETS, DEFAULT_PRESET_KEY } from "./scoringEngine.js";
-import { buildPlayerIndex, suggestOpponents, getFavoritePlayers, toggleFavoritePlayer } from "./players.js";
+import { buildPlayerIndex, suggestOpponents, canonicalName, getFavoritePlayers, toggleFavoritePlayer } from "./players.js";
+import { normName } from "./nameKey.js";
 import { addMatchToTie } from "./teamTies.js";
 
 const DEPTHS = [
@@ -73,7 +74,7 @@ function RulesTile({ preset, active, onClick }) {
 function NameField({ label, value, onChange, favorites, onToggleFavorite, suggestions, placeholder, listId }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
-  const isFav = favorites.includes(value.trim());
+  const isFav = favorites.some((n) => normName(n) === normName(value));
   return (
     <>
       <span style={styles.label}>{label}</span>
@@ -98,7 +99,7 @@ function NameField({ label, value, onChange, favorites, onToggleFavorite, sugges
         {favorites.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {favorites.map((name) => (
-              <Chip key={name} label={`★ ${name}`} active={value.trim() === name} onClick={() => onChange(name)} />
+              <Chip key={name} label={`★ ${name}`} active={normName(value) === normName(name)} onClick={() => onChange(name)} />
             ))}
           </div>
         )}
@@ -107,7 +108,7 @@ function NameField({ label, value, onChange, favorites, onToggleFavorite, sugges
             <span style={{ fontSize: 11, color: t.textMuted, display: "block", marginBottom: 6 }}>{tr("setup.playedBefore")}</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {suggestions.map((name) => (
-                <Chip key={name} label={name} active={value.trim() === name} onClick={() => onChange(name)} color={t.secondarySoft} />
+                <Chip key={name} label={name} active={normName(value) === normName(name)} onClick={() => onChange(name)} color={t.secondarySoft} />
               ))}
             </div>
           </div>
@@ -188,8 +189,11 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
   const [favorites, setFavorites] = useState(() => getFavoritePlayers());
   const handleToggleFavorite = (name) => setFavorites(toggleFavoritePlayer(name));
 
-  const team1Names = () => [t1a.trim() || tr("common.player1"), ...(isDoubles ? [t1b.trim() || `${tr("common.player1")}b`] : [])];
-  const team2Names = () => [t2a.trim() || tr("common.player2"), ...(isDoubles ? [t2b.trim() || `${tr("common.player2")}b`] : [])];
+  // Nazwisko zapisujemy w zapisie znanym z historii, więc "Kowalski Jan" i
+  // "Jan Kowalski" to zawsze ten sam zawodnik (patrz nameKey.js).
+  const nm = (v, fallback) => canonicalName(playerIndex, v) || fallback;
+  const team1Names = () => [nm(t1a, tr("common.player1")), ...(isDoubles ? [nm(t1b, `${tr("common.player1")}b`)] : [])];
+  const team2Names = () => [nm(t2a, tr("common.player2")), ...(isDoubles ? [nm(t2b, `${tr("common.player2")}b`)] : [])];
 
   const baseData = () => ({
     team1: { names: team1Names() },
@@ -228,7 +232,13 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
       .map((r) => {
         const a = parseInt(r.a, 10), b = parseInt(r.b, 10);
         if (r.superTb) return { a, b, isSuperTiebreak: true };
-        if (r.tb !== "") return { a, b, tiebreak: { a: a > b ? 7 : parseInt(r.tb, 10), b: a > b ? parseInt(r.tb, 10) : 7 } };
+        // Tie-break: w polu wpisujemy punkty przegranego; zwycięzca ma 7 albo
+        // o dwa więcej (np. 7-6 i 8 = tie-break 10:8). Dotyczy tylko 7-6 / 6-7.
+        const tbLoser = parseInt(r.tb, 10);
+        if (r.tb !== "" && Number.isFinite(tbLoser) && tbLoser >= 0 && Math.abs(a - b) === 1 && Math.max(a, b) >= 6) {
+          const tbWin = Math.max(7, tbLoser + 2);
+          return { a, b, tiebreak: { a: a > b ? tbWin : tbLoser, b: a > b ? tbLoser : tbWin } };
+        }
         return { a, b };
       });
     if (finalSets.length === 0) { alert(tr("setup.alertNeedOneSet")); return; }
@@ -325,22 +335,26 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
 
         {tab === "wynik" && isManual && (
           <>
+            <div style={{ fontSize: 12, color: t.textSub, lineHeight: 1.45, marginBottom: 14 }}>{tr("setup.manualHint")}</div>
             {manualSets.map((row, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 12, color: t.textMuted, width: 40 }}>{tr("common.setLabel", { n: i + 1 })}</span>
-                <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" value={row.a} onChange={(e) => updateManualSet(i, { a: e.target.value })} placeholder="0" />
-                <span>–</span>
-                <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" value={row.b} onChange={(e) => updateManualSet(i, { b: e.target.value })} placeholder="0" />
-                {!row.superTb && (
-                  <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" value={row.tb} onChange={(e) => updateManualSet(i, { tb: e.target.value })} placeholder={tr("setup.tbPlaceholder")} title={tr("setup.tbTitle")} />
+              <div key={i} style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 12, color: t.textMuted, width: 40 }}>{row.superTb ? "STB" : tr("common.setLabel", { n: i + 1 })}</span>
+                  <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" inputMode="numeric" value={row.a} onChange={(e) => updateManualSet(i, { a: e.target.value })} placeholder={row.superTb ? "10" : "6"} />
+                  <span>–</span>
+                  <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" inputMode="numeric" value={row.b} onChange={(e) => updateManualSet(i, { b: e.target.value })} placeholder={row.superTb ? "7" : "4"} />
+                  {!row.superTb && (
+                    <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" inputMode="numeric" value={row.tb} onChange={(e) => updateManualSet(i, { tb: e.target.value })} placeholder={tr("setup.tbPlaceholder")} title={tr("setup.tbTitle")} />
+                  )}
+                  <button onClick={() => removeManualSet(i)} aria-label={tr("common.delete")} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", minWidth: 40, minHeight: 40, display: "grid", placeItems: "center" }}><Icon name="close" size={18} /></button>
+                </div>
+                {i >= 2 && (
+                  <div style={{ marginTop: 8, marginLeft: 48 }}>
+                    <Chip label={tr("setup.superTbRow")} active={row.superTb} onClick={() => updateManualSet(i, { superTb: !row.superTb, tb: "" })} />
+                  </div>
                 )}
-                <button onClick={() => removeManualSet(i)} aria-label={tr("common.delete")} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", minWidth: 40, minHeight: 40, display: "grid", placeItems: "center" }}><Icon name="close" size={18} /></button>
               </div>
             ))}
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: t.textSub, marginBottom: 12 }}>
-              <input type="checkbox" checked={manualSets[manualSets.length - 1]?.superTb || false} onChange={(e) => updateManualSet(manualSets.length - 1, { superTb: e.target.checked })} />
-              {tr("setup.superTbCheckbox")}
-            </label>
             {manualSets.length < 5 && <button style={styles.secondaryBtn} onClick={addManualSet}><Icon name="add" size={18} />{tr("setup.addSet")}</button>}
           </>
         )}

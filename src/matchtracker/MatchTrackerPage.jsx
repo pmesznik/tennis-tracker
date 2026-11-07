@@ -9,6 +9,9 @@ import { computeScore, formatSetsString, buildSetRow, teamLabel, otherTeam, curr
 import { shareMatch, buildLiveShareUrl } from "./shareLink.js";
 import { publishLiveScore } from "./liveSync.js";
 import { getStoredPalette } from "../theme.js";
+import { EditNamesButton, EditNamesModal, FinalSetModal } from "./TrackerModals.jsx";
+import { buildPlayerIndex, canonicalName } from "./players.js";
+import { cleanName } from "./nameKey.js";
 
 const INITIAL_STAGE = { name: "serve1", rallyCount: 0, shotType: "forehand", atNet: false, serveUsed: "1st" };
 
@@ -21,7 +24,7 @@ function buildLivePayload(match, score) {
     sets: buildSetRow(match.rules, score),
     gameA: score.game?.a ?? null,
     gameB: score.game?.b ?? null,
-    server: match.initialServer ? score.server : null, // przed wyborem serwującego nikt jeszcze nie serwuje
+    server: match.initialServer ? (score.pointServer ?? score.server) : null, // przed wyborem serwującego nikt jeszcze nie serwuje
     matchWinner: score.matchWinner,
     sf: match.surface || null,
     d: match.date || null,
@@ -35,6 +38,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   const [match, setMatch] = useState(() => storage.getMatch(matchId));
   const [stage, setStage] = useState(INITIAL_STAGE);
   const [now, setNow] = useState(() => Date.now());
+  const [editingNames, setEditingNames] = useState(false);
 
   // Cała apka przebarwia się na nawierzchnię tego meczu, dopóki go oglądamy.
   useEffect(() => {
@@ -130,20 +134,64 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   );
 
   const commitPoint = (winner, extra = {}) => {
-    const point = { winner, server: score.server, t: Date.now(), ...extra };
+    const point = { winner, server: score.pointServer ?? score.server, t: Date.now(), ...extra };
     persist([...match.pointLog, point]);
   };
 
   const handleUndo = () => {
     if (match.pointLog.length === 0) return;
-    persist(match.pointLog.slice(0, -1));
+    const newLog = match.pointLog.slice(0, -1);
+    // Cofnięcie do środka drugiego seta unieważnia wybór decydującego seta.
+    const back = computeScore(rules, newLog, match.initialServer || TEAM1, match.startedAt);
+    persist(newLog, match.finalSetChosen && back.sets.length < 2 ? { finalSetChosen: false } : {});
   };
+
+  // Poprawa imion i nazwisk w trakcie meczu. Nazwisko trafia w zapisie znanym
+  // z historii (kolejność "imię nazwisko" nie ma znaczenia), a kolejność
+  // serwisu w deblu przenosimy na nowe nazwiska (po pozycji).
+  const handleSaveNames = (n1, n2) => {
+    const idx = buildPlayerIndex(storage.listMatches().filter((m) => m.id !== match.id));
+    const fix = (arr, old, fb) => arr.map((v, i) => canonicalName(idx, cleanName(v)) || old[i] || fb);
+    const old1 = match.team1.names || [], old2 = match.team2.names || [];
+    const new1 = fix(n1, old1, tr("common.player1")), new2 = fix(n2, old2, tr("common.player2"));
+    const rename = new Map([...old1.map((o, i) => [o, new1[i]]), ...old2.map((o, i) => [o, new2[i]])]);
+    const patch = { team1: { ...match.team1, names: new1 }, team2: { ...match.team2, names: new2 } };
+    if (match.serverOrder) {
+      patch.serverOrder = Object.fromEntries(Object.entries(match.serverOrder).map(([team, arr]) => [team, arr.map((nm) => rename.get(nm) || nm)]));
+    }
+    const updated = storage.updateMatch(match.id, patch);
+    setMatch(updated);
+    setEditingNames(false);
+    if (updated.liveShareEnabled && updated.initialServer) {
+      publishLiveScore(updated.id, buildLivePayload(updated, computeScore(updated.rules, updated.pointLog, updated.initialServer || TEAM1, updated.startedAt)));
+    }
+  };
+
+  const handlePickFinalSet = (superTb) => {
+    const updated = storage.updateMatch(match.id, { rules: { ...match.rules, finalSetSuperTiebreak: superTb }, finalSetChosen: true });
+    setMatch(updated);
+    if (updated.liveShareEnabled) {
+      publishLiveScore(updated.id, buildLivePayload(updated, computeScore(updated.rules, updated.pointLog, updated.initialServer || TEAM1, updated.startedAt)));
+    }
+  };
+
+  const namesButton = <EditNamesButton onClick={() => setEditingNames(true)} />;
+  const namesModal = editingNames && (
+    <EditNamesModal names={{ team1: match.team1.names || [], team2: match.team2.names || [] }} onSave={handleSaveNames} onClose={() => setEditingNames(false)} />
+  );
+  // Po 1:1 w setach (mecz do 2 wygranych) i przed pierwszym punktem decydującego seta.
+  const needFinalSetChoice = rules.sets === 3 && !match.finalSetChosen && match.status === "in_progress" &&
+    score.sets.length === 2 && score.setsWonA === 1 && score.setsWonB === 1 &&
+    score.curSetGamesA === 0 && score.curSetGamesB === 0 && score.game?.a === "0" && score.game?.b === "0";
+  const finalSetModal = needFinalSetChoice && (
+    <FinalSetModal superTb={!!rules.finalSetSuperTiebreak} superTo={rules.finalSetSuperTiebreakTo} onPick={handlePickFinalSet} />
+  );
 
   // ── Ekran "Kto serwuje?" (tylko raz, na starcie meczu) ─────────────────────
   if (!match.initialServer) {
     return (
       <FullScreen>
-        <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} />
+        <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={namesButton} />
         <div style={{ display: "flex", justifyContent: "center", padding: "12px 16px 0" }}>{liveShareButton}</div>
         <div style={{ padding: 16, textAlign: "center", fontSize: 15, fontWeight: 700, color: t.textSub }}>
           {tr("tracker.whoServes")}
@@ -179,6 +227,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
             }}>{name2}<br /><span style={{ fontSize: 12, fontWeight: 500 }}>{tr("tracker.serves")}</span></button>
           </div>
         )}
+        {namesModal}
       </FullScreen>
     );
   }
@@ -198,7 +247,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     const teamName = teamLabel(team, match.team1.names, match.team2.names, tr("common.player1"), tr("common.player2"));
     return (
       <FullScreen>
-        <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} />
+        <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={namesButton} />
         <div style={{ display: "flex", justifyContent: "center", padding: "12px 16px 0" }}>{liveShareButton}</div>
         <div style={{ padding: 16, textAlign: "center", fontSize: 15, fontWeight: 700, color: t.textSub }}>
           {tr("tracker.whoServesOtherTeam", { team: teamName })}
@@ -211,12 +260,22 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
             }}>{nm}<br /><span style={{ fontSize: 12, fontWeight: 500 }}>{tr("tracker.serves")}</span></button>
           ))}
         </div>
+        {namesModal}
       </FullScreen>
     );
   }
 
   // ── Nagłówek wyniku (wspólny dla wszystkich głębokości) ────────────────────
-  const setCols = score.sets.map((s) => formatSetsString([s]).split("-"));
+  // Komórka seta: gemy, a przy przegranym tie-breaku małe punkty przegranego
+  // (7-6 z indeksem); super tie-break pokazuje punkty.
+  const setCell = (s, side) => {
+    const own = side === 0 ? s.a : s.b;
+    if (!s.tiebreak) return own;
+    const tbOwn = side === 0 ? s.tiebreak.a : s.tiebreak.b;
+    const tbOther = side === 0 ? s.tiebreak.b : s.tiebreak.a;
+    return <>{own}{tbOwn < tbOther && <sup style={{ fontSize: 9, marginLeft: 1 }}>{tbOwn}</sup>}</>;
+  };
+  const setCols = score.sets.map((s) => [setCell(s, 0), setCell(s, 1)]);
   // W deblu, jeśli ustalono kolejność serwisu (serverOrder), piłeczka trafia
   // przy konkretnym zawodniku zamiast całej drużyny — patrz
   // currentServerPlayerName (w tie-breaku świadomie brak, rotacja punkt po
@@ -238,8 +297,8 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         ].map(({ team, name }, rowIdx) => (
           <div key={team} style={{
             display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", minHeight: 52,
-            background: score.server === team && !score.matchWinner ? t.tonal : t.surface,
-            border: `1px solid ${score.server === team && !score.matchWinner ? `${t.accent}66` : t.glassLine}`,
+            background: (score.pointServer ?? score.server) === team && !score.matchWinner ? t.tonal : t.surface,
+            border: `1px solid ${(score.pointServer ?? score.server) === team && !score.matchWinner ? `${t.accent}66` : t.glassLine}`,
             borderRadius: t.rMd,
           }}>
             <span style={{ flex: 1, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -249,17 +308,17 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
                     <span key={nm} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                       {i > 0 && <span style={{ color: t.textMuted, fontWeight: 400 }}> / </span>}
                       {nm}
-                      {score.server === team && !score.matchWinner && servingPlayer === nm && <TennisBall size={20} />}
+                      {(score.pointServer ?? score.server) === team && !score.matchWinner && servingPlayer === nm && <TennisBall size={20} />}
                     </span>
                   ))}
-                  {score.server === team && !score.matchWinner && !servingPlayer && <TennisBall size={20} />}
+                  {(score.pointServer ?? score.server) === team && !score.matchWinner && !servingPlayer && <TennisBall size={20} />}
                 </>
               ) : (
-                <>{name} {score.server === team && !score.matchWinner && <TennisBall />}</>
+                <>{name} {(score.pointServer ?? score.server) === team && !score.matchWinner && <TennisBall />}</>
               )}
             </span>
             {setCols.map((cols, i) => (
-              <span key={i} style={{ width: 22, textAlign: "center", fontSize: 14, color: t.textMuted }}>{cols[rowIdx]}</span>
+              <span key={i} style={{ minWidth: 22, textAlign: "center", fontSize: 14, color: t.textMuted }}>{cols[rowIdx]}</span>
             ))}
             <span style={{
               width: 26, textAlign: "center", fontSize: 16, fontWeight: 800,
@@ -337,28 +396,30 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   if (match.trackingDepth === "basic") {
     return (
       <FullScreen>
-        <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={matchClock} />
+        <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={<>{matchClock}{namesButton}</>} />
         {Header}
         {TopRow}
         <div style={{ flex: 1, minHeight: 0, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "row", gap: 12 }}>
           <BigButton label={tr("tracker.pointFor", { name: name1 })} color={t.bigA.bg} textColor={t.bigA.fg} onClick={() => commitPoint(TEAM1)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
           <BigButton label={tr("tracker.pointFor", { name: name2 })} color={t.bigB.bg} textColor={t.bigB.fg} onClick={() => commitPoint(TEAM2)} style={{ flex: 1, minHeight: 0, height: "100%" }} />
         </div>
+        {namesModal}{finalSetModal}
       </FullScreen>
     );
   }
 
   // ── INTERMEDIATE / ADVANCED / ADVANCED+RALLIES ─────────────────────────────
-  const returner = otherTeam(score.server);
+  const pointServer = score.pointServer ?? score.server;
+  const returner = otherTeam(pointServer);
 
   const goToPointEnd = (serveUsed) => setStage((s) => ({ ...s, name: "point-end", serveUsed }));
   const goToRally = (serveUsed) => setStage((s) => ({ ...s, name: "rally", serveUsed, rallyCount: 0 }));
 
-  const handleAce = (serveUsed) => commitPoint(score.server, { serve: serveUsed, serveResult: "ace", endType: "ace" });
+  const handleAce = (serveUsed) => commitPoint(pointServer, { serve: serveUsed, serveResult: "ace", endType: "ace" });
   const handleFault1 = () => setStage((s) => ({ ...s, name: "serve2" }));
   const handleDoubleFault = () => commitPoint(returner, { serve: "2nd", serveResult: "doubleFault", endType: "doubleFault" });
   const handleReturnWinner = (serveUsed) => commitPoint(returner, { serve: serveUsed, endType: "winner", endBy: returner });
-  const handleReturnError = (serveUsed) => commitPoint(score.server, { serve: serveUsed, endType: "unforcedError", endBy: returner });
+  const handleReturnError = (serveUsed) => commitPoint(pointServer, { serve: serveUsed, endType: "unforcedError", endBy: returner });
   const handleBallInPlay = (serveUsed) => {
     if (match.trackingDepth === "advanced_rallies") goToRally(serveUsed);
     else goToPointEnd(serveUsed);
@@ -456,10 +517,11 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
 
   return (
     <FullScreen>
-      <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={matchClock} />
+      <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={<>{matchClock}{namesButton}</>} />
       {Header}
       {TopRow}
       {body}
+      {namesModal}{finalSetModal}
     </FullScreen>
   );
 }

@@ -214,7 +214,9 @@ export function computeScore(rules, pointLog, initialServer = TEAM1, startedAt =
   if (matchWinner) {
     game = null;
   } else if (inSuperTb) {
-    game = { a: String(curPtsA), b: String(curPtsB), isTiebreak: true, isSuperTiebreak: true, server };
+    // Super tie-break: serwis jak w zwykłym tie-breaku (1-2-2-2...), zaczyna
+    // ten, kto serwowałby kolejny gem.
+    game = { a: String(curPtsA), b: String(curPtsB), isTiebreak: true, isSuperTiebreak: true, server: tiebreakServerAt(curPtsA + curPtsB + 1, server) };
   } else if (inTb) {
     const pointsSoFar = curPtsA + curPtsB;
     const tbServer = tiebreakServerAt(pointsSoFar + 1, tiebreakFirstServerForCurrentGame ?? server);
@@ -229,6 +231,9 @@ export function computeScore(rules, pointLog, initialServer = TEAM1, startedAt =
     setsWonA, setsWonB,
     curSetGamesA, curSetGamesB,
     server,
+    // Kto naprawdę serwuje następny punkt: w gemie to samo co `server`, w
+    // tie-breaku i super tie-breaku serwis zmienia się co dwa punkty.
+    pointServer: matchWinner ? null : (game?.server ?? server),
     matchWinner,
     game,
     isMatchPoint: !matchWinner && computeIsMatchPoint(rules, { curPtsA, curPtsB, curSetGamesA, curSetGamesB, setsWonA, setsWonB, setsToWinMatch, inTb, inSuperTb, noAd: rules.noAd }),

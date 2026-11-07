@@ -285,7 +285,7 @@
           <div class="tagline">Dokumentacja projektu</div>
         </div>
       </div>
-      <div class="version-pill"><span class="dot"></span>v0.17.0</div>
+      <div class="version-pill"><span class="dot"></span>v0.18.0</div>
     </header>
 
     <p class="lede">
@@ -569,6 +569,18 @@
       </p>
     </section>
 
+    <section id="przebieg">
+      <div class="eyebrow">Przebieg meczu</div>
+      <h2>Imiona, decydujący set i tie-break</h2>
+      <p>
+        Ołówek w pasku meczu na żywo pozwala poprawić imiona i nazwiska w trakcie gry; zmiana obejmuje statystyki i udostępnianie na żywo.
+        Zapis nie zależy od kolejności: „Jan Kowalski” i „Kowalski Jan” to ten sam zawodnik (klucz <code>nameKey.js</code>), a przy zakładaniu meczu
+        nazwisko trafia w zapisie znanym z historii. Po stanie 1:1 w setach aplikacja pyta, czy trzeci set ma być pełny, czy super tie-break do 10.
+        W tie-breaku i super tie-breaku serwis zmienia się co dwa punkty (pole <code>pointServer</code>), więc asy i statystyki serwisu liczą się właściwej stronie.
+        W ręcznym zapisie wyniku pole TB to punkty przegranego (7-6 i 5 daje 7-6(5)), a super tie-break zaznacza się przy trzecim secie.
+      </p>
+    </section>
+
     <section id="aktualizacje">
       <div class="eyebrow">Aktualizacje</div>
       <h2>Automatyczna aktualizacja aplikacji</h2>
@@ -823,7 +835,7 @@ npx cap sync android</code></pre>
 
     <footer>
       <span>Tennis Tracker — dokumentacja wewnętrzna projektu.</span>
-      <span>Wygenerowano dla wersji <span class="mono">v0.17.0</span></span>
+      <span>Wygenerowano dla wersji <span class="mono">v0.18.0</span></span>
     </footer>
   </main>
 </div>

@@ -10,12 +10,8 @@
 import { computeScore } from "./scoringEngine.js";
 import { computeStats, computeBreakPoints } from "./stats.js";
 
-export function normName(n) {
-  return String(n || "")
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/ł/g, "l").replace(/Ł/g, "L")
-    .toLowerCase().replace(/\s+/g, " ").trim();
-}
+import { normName } from "./nameKey.js";
+export { normName };
 
 // Strony meczu jako tablice nazwisk: single (po jednym nazwisku, bez debla)
 // albo debel (flaga isDoubles). Inny typ meczu daje null i jest pomijany.
