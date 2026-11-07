@@ -42,3 +42,22 @@ describe("debel: kolejność serwisu w kolejnych setach", () => {
     expect(currentServerPlayerName({ ...m3, pointLog: log3 }, sc3)).toBe("A1");
   });
 });
+
+describe("debel: serwis zawodników w tie-breaku", () => {
+  it("1 punkt pierwszy serwujący, potem po 2: rywal, partner, drugi rywal, pierwszy", () => {
+    // 6:6 w pierwszym secie (po 12 gemach serwuje znów team1)
+    const seq = [];
+    for (let i = 0; i < 6; i++) seq.push("team1", "team2");
+    const log = gamesLog(seq);
+    const names = [];
+    let cur = [...log];
+    for (let i = 0; i < 10; i++) {
+      const sc = computeScore(rulesTb, cur, "team1");
+      expect(sc.game.isTiebreak).toBe(true);
+      names.push(currentServerPlayerName({ ...base, pointLog: cur }, sc));
+      cur = [...cur, { winner: i % 2 ? "team1" : "team2" }];
+    }
+    // team1: 6 gemów serwisowych -> następny A1; team2: 6 -> następny B1
+    expect(names).toEqual(["A1", "B1", "B1", "A2", "A2", "B2", "B2", "A1", "A1", "B1"]);
+  });
+});

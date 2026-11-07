@@ -11,8 +11,7 @@ import { publishLiveScore } from "./liveSync.js";
 import { getStoredPalette } from "../theme.js";
 import { MoreButton, MatchOptionsModal, EditNamesModal, EndMatchModal, FinalSetModal } from "./TrackerModals.jsx";
 import { earlySetsRow } from "./earlyEnd.js";
-import { buildPlayerIndex, canonicalName } from "./players.js";
-import { cleanName } from "./nameKey.js";
+import { buildRenamePatch, buildSwapServerPatch } from "./matchEdit.js";
 
 const INITIAL_STAGE = { name: "serve1", rallyCount: 0, shotType: "forehand", atNet: false, serveUsed: "1st" };
 
@@ -162,22 +161,21 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   // z historii (kolejność "imię nazwisko" nie ma znaczenia), a kolejność
   // serwisu w deblu przenosimy na nowe nazwiska (po pozycji).
   const handleSaveNames = (n1, n2) => {
-    const idx = buildPlayerIndex(storage.listMatches().filter((m) => m.id !== match.id));
-    const fix = (arr, old, fb) => arr.map((v, i) => canonicalName(idx, cleanName(v)) || old[i] || fb);
-    const old1 = match.team1.names || [], old2 = match.team2.names || [];
-    const new1 = fix(n1, old1, tr("common.player1")), new2 = fix(n2, old2, tr("common.player2"));
-    const rename = new Map([...old1.map((o, i) => [o, new1[i]]), ...old2.map((o, i) => [o, new2[i]])]);
-    const patch = { team1: { ...match.team1, names: new1 }, team2: { ...match.team2, names: new2 } };
-    if (match.serverOrder) {
-      patch.serverOrder = Object.fromEntries(Object.entries(match.serverOrder).map(([team, arr]) => [team, arr.map((nm) => rename.get(nm) || nm)]));
-    }
-    if (match.serverOrderBySet) {
-      patch.serverOrderBySet = Object.fromEntries(Object.entries(match.serverOrderBySet).map(([k, teams]) => [k,
-        Object.fromEntries(Object.entries(teams).map(([team, arr]) => [team, arr.map((nm) => rename.get(nm) || nm)]))]));
-    }
+    const patch = buildRenamePatch(match, n1, n2, storage.listMatches().filter((m) => m.id !== match.id), tr("common.player1"), tr("common.player2"));
     const updated = storage.updateMatch(match.id, patch);
     setMatch(updated);
     setEditingNames(false);
+    if (updated.liveShareEnabled && updated.initialServer) {
+      publishLiveScore(updated.id, buildLivePayload(updated, computeScore(updated.rules, updated.pointLog, updated.initialServer || TEAM1, updated.startedAt)));
+    }
+  };
+
+  // Pomyłka na starcie: zamiana pierwszego serwującego (punkty i wynik przeliczają się).
+  const handleSwapServer = () => {
+    setOptionsOpen(false);
+    if (!confirm(tr("tracker.swapServerConfirm"))) return;
+    const updated = storage.updateMatch(match.id, buildSwapServerPatch(match));
+    setMatch(updated);
     if (updated.liveShareEnabled && updated.initialServer) {
       publishLiveScore(updated.id, buildLivePayload(updated, computeScore(updated.rules, updated.pointLog, updated.initialServer || TEAM1, updated.startedAt)));
     }
@@ -210,6 +208,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <MatchOptionsModal
           onEditNames={() => { setOptionsOpen(false); setEditingNames(true); }}
           onEndEarly={() => { setOptionsOpen(false); setEndingMatch(true); }}
+          onSwapServer={match.initialServer ? handleSwapServer : undefined}
           onClose={() => setOptionsOpen(false)}
         />
       )}
@@ -399,7 +398,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
           <ScoreBoard
             style={scoreStyle} labels={[score.game.a, score.game.b]} server={score.game.server}
             tiebreak={score.game.isTiebreak} gameEnded={gameEnded}
-            tbTarget={score.game.isSuperTiebreak ? rules.finalSetSuperTiebreakTo : rules.tiebreakTo}
+            tbTarget={score.game.isSuperTiebreak ? rules.finalSetSuperTiebreakTo : (score.setsWonA + score.setsWonB === rules.sets - 1 && rules.finalSetTiebreakTo ? rules.finalSetTiebreakTo : rules.tiebreakTo)}
           />
         ) : <span style={{ fontSize: 22, fontWeight: 800, color: t.accent }}>—</span>}
       </div>

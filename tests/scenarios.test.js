@@ -83,3 +83,31 @@ describe("scenariusze meczu", () => {
     expect(s.sets.length).toBe(2);
   });
 });
+
+describe("dodatkowe formaty", () => {
+  it("krótkie sety do 4: 4:2 kończy seta, 3:3 daje tie-break do 7 (4:3)", () => {
+    const r = PRESETS.short_sets_4;
+    const s42 = computeScore(r, gamesLog(setSpec("team1", "team2", 4, 2)));
+    expect(s42.sets[0]).toMatchObject({ a: 4, b: 2 });
+    const seq = ["team1", "team2", "team1", "team2", "team1", "team2"];
+    const s = computeScore(r, [...gamesLog(seq), ...pts("team1", 7)]);
+    expect(s.sets[0]).toMatchObject({ a: 4, b: 3, tiebreak: { a: 7, b: 0 } });
+  });
+
+  it("3. set z tie-breakiem do 10 przy 6:6", () => {
+    const r = PRESETS.best_of_3_tb10;
+    const first = gamesLog(setSpec("team1", "team2", 6, 0));
+    const second = gamesLog(setSpec("team2", "team1", 6, 0));
+    const seq = [];
+    for (let i = 0; i < 6; i++) seq.push("team1", "team2");
+    const base = [...first, ...second, ...gamesLog(seq)];
+    const at7 = computeScore(r, [...base, ...pts("team1", 7)]);
+    expect(at7.matchWinner).toBe(null); // do 7 jeszcze za mało
+    const at10 = computeScore(r, [...base, ...pts("team1", 10)]);
+    expect(at10.matchWinner).toBe("team1");
+    expect(at10.sets[2].tiebreak).toEqual({ a: 10, b: 0 });
+    // w 1. secie nadal do 7
+    const s1 = [...gamesLog(seq), ...pts("team1", 7)];
+    expect(computeScore(r, s1).sets[0].tiebreak).toEqual({ a: 7, b: 0 });
+  });
+});

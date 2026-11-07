@@ -1,5 +1,5 @@
 // Tennis Tracker v0.2.0 — podsumowanie meczu (wynik + statystyki).
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang, surfaceLabel } from "../i18n.js";
 import { TopBar, FullScreen, ScrollBody, Card, ShareIcon, Icon } from "./ui.jsx";
@@ -13,6 +13,8 @@ import { computeStats, computeBreakPoints, flowSeries } from "./stats.js";
 import { StatRow, Donut, FlowChart, sideColors } from "./charts.jsx";
 import { renderStatsPng, shareStatsPng } from "./statsImage.js";
 import { earlySetsRow } from "./earlyEnd.js";
+import { EditNamesModal, EditScoreModal } from "./TrackerModals.jsx";
+import { buildRenamePatch, manualRowsToSets, setsToManualRows } from "./matchEdit.js";
 
 const STAT_ROWS = [
   ["aces", "stat.aces"],
@@ -26,6 +28,9 @@ const STAT_ROWS = [
 export default function MatchSummaryPage({ matchId, onBack, onContinue, onDeleted, onSurfaceChange, onOpenH2H }) {
   const { t, styles } = useThemeCtx();
   const { lang, t: tr } = useLang();
+  const [, setTick] = useState(0);
+  const [editNames, setEditNames] = useState(false);
+  const [editScore, setEditScore] = useState(false);
   const match = storage.getMatch(matchId);
 
   useEffect(() => {
@@ -69,6 +74,19 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
     for (const [key, labelKey] of STAT_ROWS) rows.push({ label: tr(labelKey), a: stats.team1[key], b: stats.team2[key], higherIsBetter: key !== "doubleFaults" && key !== "unforcedErrors" });
     const png = renderStatsPng({ title: tr("summary.title"), nameA: name1, nameB: name2, scoreA: score ? score.setsWonA : 0, scoreB: score ? score.setsWonB : 0, subtitle: setsRow.join("  "), rows }, t);
     shareStatsPng(png, "tennis-tracker-mecz.png", `${name1} – ${name2}: ${setsRow.join(" ")}`);
+  };
+
+  const handleSaveNames = (n1, n2) => {
+    storage.updateMatch(match.id, buildRenamePatch(match, n1, n2, storage.listMatches().filter((m) => m.id !== match.id), tr("common.player1"), tr("common.player2")));
+    setEditNames(false);
+    setTick((x) => x + 1);
+  };
+  const handleSaveScore = (rows) => {
+    const sets = manualRowsToSets(rows);
+    if (sets.length === 0) { alert(tr("setup.alertNeedOneSet")); return; }
+    storage.updateMatch(match.id, { finalSetsOverride: sets });
+    setEditScore(false);
+    setTick((x) => x + 1);
   };
 
   const handleResume = () => {
@@ -205,9 +223,15 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
               <Icon name="image" size={19} />{tr("summary.shareImage")}
             </button>
           )}
+          <button style={styles.secondaryBtn} onClick={() => setEditNames(true)}><Icon name="edit" size={19} />{tr("summary.editNames")}</button>
+          {match.finalSetsOverride && !match.endReason && (
+            <button style={styles.secondaryBtn} onClick={() => setEditScore(true)}><Icon name="edit" size={19} />{tr("summary.editScore")}</button>
+          )}
           <button style={{ ...styles.secondaryBtn, background: `${t.danger}1c`, color: t.danger }} onClick={handleDelete}><Icon name="trash" size={19} />{tr("common.deleteMatch")}</button>
         </div>
       </ScrollBody>
+      {editNames && <EditNamesModal names={{ team1: match.team1.names || [], team2: match.team2.names || [] }} onSave={handleSaveNames} onClose={() => setEditNames(false)} />}
+      {editScore && <EditScoreModal rows={setsToManualRows(match.finalSetsOverride)} onSave={handleSaveScore} onClose={() => setEditScore(false)} />}
     </FullScreen>
   );
 }

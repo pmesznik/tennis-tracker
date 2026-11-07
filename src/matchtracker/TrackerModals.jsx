@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
 import { pushBack } from "../backStack.js";
-import { Icon } from "./ui.jsx";
+import { Icon, Chip } from "./ui.jsx";
 
 function Sheet({ title, onClose, children }) {
   const { t } = useThemeCtx();
@@ -105,7 +105,7 @@ export function MoreButton({ onClick }) {
   );
 }
 
-export function MatchOptionsModal({ onEditNames, onEndEarly, onClose }) {
+export function MatchOptionsModal({ onEditNames, onEndEarly, onSwapServer, onClose }) {
   const { t } = useThemeCtx();
   const { t: tr } = useLang();
   const Row = ({ icon, label, desc, onClick }) => (
@@ -124,6 +124,7 @@ export function MatchOptionsModal({ onEditNames, onEndEarly, onClose }) {
   return (
     <Sheet title={tr("tracker.options")} onClose={onClose}>
       <Row icon="edit" label={tr("tracker.editNames")} desc={tr("tracker.editNamesShort")} onClick={onEditNames} />
+      {onSwapServer && <Row icon="undo" label={tr("tracker.swapServer")} desc={tr("tracker.swapServerShort")} onClick={onSwapServer} />}
       <Row icon="flag" label={tr("tracker.endEarly")} desc={tr("tracker.endEarlyShort")} onClick={onEndEarly} />
     </Sheet>
   );
@@ -170,6 +171,47 @@ export function EndMatchModal({ labels, onConfirm, onClose }) {
       <div style={{ display: "flex", gap: 10 }}>
         <button style={{ ...styles.secondaryBtn, flex: 1 }} onClick={onClose}>{tr("common.cancel")}</button>
         <button style={{ ...styles.primaryBtn, flex: 1, opacity: loser ? 1 : 0.45 }} disabled={!loser} onClick={() => onConfirm(reason, loser)}>{tr("tracker.endConfirm")}</button>
+      </div>
+    </Sheet>
+  );
+}
+
+// Edytor ręcznie wpisanego wyniku (mecz z "Zapisz wynik"): sety, tie-break
+// (punkty przegranego) i super tie-break przy trzecim secie.
+export function EditScoreModal({ rows: initialRows, onSave, onClose }) {
+  const { t, styles } = useThemeCtx();
+  const { t: tr } = useLang();
+  const [rows, setRows] = useState(initialRows.length ? initialRows : [{ a: "", b: "", tb: "", superTb: false }]);
+  const upd = (i, patch) => setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  const inp = { ...styles.input, width: 56, textAlign: "center" };
+  return (
+    <Sheet title={tr("summary.editScore")} onClose={onClose}>
+      <div style={{ fontSize: 12, color: t.textSub, lineHeight: 1.45, marginBottom: 14 }}>{tr("setup.manualHint")}</div>
+      {rows.map((row, i) => (
+        <div key={i} style={{ marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, color: t.textMuted, width: 40 }}>{row.superTb ? "STB" : tr("common.setLabel", { n: i + 1 })}</span>
+            <input style={inp} type="number" inputMode="numeric" value={row.a} onChange={(e) => upd(i, { a: e.target.value })} />
+            <span>–</span>
+            <input style={inp} type="number" inputMode="numeric" value={row.b} onChange={(e) => upd(i, { b: e.target.value })} />
+            {!row.superTb && <input style={inp} type="number" inputMode="numeric" value={row.tb} onChange={(e) => upd(i, { tb: e.target.value })} placeholder={tr("setup.tbPlaceholder")} title={tr("setup.tbTitle")} />}
+            <button onClick={() => setRows((rs) => rs.filter((_, idx) => idx !== i))} aria-label={tr("common.delete")} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", minWidth: 40, minHeight: 40, display: "grid", placeItems: "center" }}><Icon name="close" size={18} /></button>
+          </div>
+          {i >= 2 && (
+            <div style={{ marginTop: 8, marginLeft: 48 }}>
+              <Chip label={tr("setup.superTbRow")} active={row.superTb} onClick={() => upd(i, { superTb: !row.superTb, tb: "" })} />
+            </div>
+          )}
+        </div>
+      ))}
+      {rows.length < 5 && (
+        <button style={{ ...styles.secondaryBtn, marginBottom: 12 }} onClick={() => setRows((rs) => [...rs, { a: "", b: "", tb: "", superTb: false }])}>
+          <Icon name="add" size={18} />{tr("setup.addSet")}
+        </button>
+      )}
+      <div style={{ display: "flex", gap: 10 }}>
+        <button style={{ ...styles.secondaryBtn, flex: 1 }} onClick={onClose}>{tr("common.cancel")}</button>
+        <button style={{ ...styles.primaryBtn, flex: 1 }} onClick={() => onSave(rows)}>{tr("common.save")}</button>
       </div>
     </Sheet>
   );

@@ -8,6 +8,7 @@ import * as storage from "./storage.js";
 import { PRESETS, DEFAULT_PRESET_KEY } from "./scoringEngine.js";
 import { buildPlayerIndex, suggestOpponents, canonicalName, getFavoritePlayers, toggleFavoritePlayer } from "./players.js";
 import { normName } from "./nameKey.js";
+import { manualRowsToSets } from "./matchEdit.js";
 import { addMatchToTie } from "./teamTies.js";
 
 const DEPTHS = [
@@ -227,20 +228,7 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
   const updateManualSet = (i, patch) => setManualSets((s) => s.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
 
   const handleSaveManual = () => {
-    const finalSets = manualSets
-      .filter((r) => r.a !== "" && r.b !== "")
-      .map((r) => {
-        const a = parseInt(r.a, 10), b = parseInt(r.b, 10);
-        if (r.superTb) return { a, b, isSuperTiebreak: true };
-        // Tie-break: w polu wpisujemy punkty przegranego; zwycięzca ma 7 albo
-        // o dwa więcej (np. 7-6 i 8 = tie-break 10:8). Dotyczy tylko 7-6 / 6-7.
-        const tbLoser = parseInt(r.tb, 10);
-        if (r.tb !== "" && Number.isFinite(tbLoser) && tbLoser >= 0 && Math.abs(a - b) === 1 && Math.max(a, b) >= 6) {
-          const tbWin = Math.max(7, tbLoser + 2);
-          return { a, b, tiebreak: { a: a > b ? tbWin : tbLoser, b: a > b ? tbLoser : tbWin } };
-        }
-        return { a, b };
-      });
+    const finalSets = manualRowsToSets(manualSets);
     if (finalSets.length === 0) { alert(tr("setup.alertNeedOneSet")); return; }
     const match = linkToTie(storage.createMatch({
       ...baseData(),

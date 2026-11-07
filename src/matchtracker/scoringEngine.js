@@ -55,6 +55,23 @@ export const PRESETS = {
     finalSetSuperTiebreak: true, finalSetSuperTiebreakTo: 10,
     bulletKeys: ["b.matchTo2Sets", "b.setTo6Games", "b.noAd", "b.tbAt66", "b.superTbInstead3rd"],
   },
+  best_of_3_tb10: {
+    key: "best_of_3_tb10",
+    labelKey: "preset.bo3tb10.label",
+    sets: 3, gamesPerSet: 6, noAd: false,
+    tiebreakAt: 6, tiebreakTo: 7,
+    finalSetSuperTiebreak: false, finalSetSuperTiebreakTo: 10,
+    finalSetTiebreakTo: 10, // tie-break w decydującym secie gra się do 10
+    bulletKeys: ["b.matchTo2Sets", "b.setTo6Games", "b.deuce", "b.tbAt66", "b.tb10Final"],
+  },
+  short_sets_4: {
+    key: "short_sets_4",
+    labelKey: "preset.short4.label",
+    sets: 3, gamesPerSet: 4, noAd: false,
+    tiebreakAt: 3, tiebreakTo: 7,
+    finalSetSuperTiebreak: true, finalSetSuperTiebreakTo: 10,
+    bulletKeys: ["b.matchTo2Sets", "b.setTo4Games", "b.deuce", "b.tbAt33", "b.superTbInstead3rd"],
+  },
   pro_set_8: {
     key: "pro_set_8",
     labelKey: "preset.proset8.label",
@@ -166,7 +183,7 @@ export function computeScore(rules, pointLog, initialServer = TEAM1, startedAt =
         tiebreakFirstServerForCurrentGame = completedGames % 2 === 0 ? initialServer : otherTeam(initialServer);
       }
       if (aWins) curPtsA++; else curPtsB++;
-      const target = rules.tiebreakTo;
+      const target = isFinalSet() && rules.finalSetTiebreakTo ? rules.finalSetTiebreakTo : rules.tiebreakTo;
       if (Math.max(curPtsA, curPtsB) >= target && Math.abs(curPtsA - curPtsB) >= 2) {
         const aWinsTb = curPtsA > curPtsB;
         if (aWinsTb) curSetGamesA++; else curSetGamesB++;
@@ -262,26 +279,52 @@ export function teamServiceTurnIndex(team, initialServer, completedGames) {
 // Świadome uproszczenie: w tie-breaku/super tie-breaku serwis rotuje punkt po
 // punkcie między WSZYSTKIMI czterema zawodnikami, czego tu nie liczymy — w tej
 // sytuacji funkcja zwraca null, a UI pokazuje tylko drużynę (jak dotychczas).
-export function currentServerPlayerName(match, score) {
-  if (!match.isDoubles || !score.server || score.game?.isTiebreak) return null;
-  // Para może zmienić kolejność serwisu przed każdym kolejnym setem
-  // (match.serverOrderBySet[numerSeta][drużyna]); wtedy liczymy gemy serwisowe
-  // od początku tego seta, inaczej obowiązuje kolejność z początku meczu.
+// Kolejność serwisu zawodników drużyny oraz liczba gemów serwisowych, które ta
+// drużyna już ZAKOŃCZYŁA w bieżącym secie (gdy para ustaliła kolejność dla tego
+// seta) albo w całym meczu (kolejność z początku meczu). null = brak danych.
+function teamOrderInfo(match, score, team) {
+  const initial = match.initialServer || TEAM1;
+  const completed = score.completedGames ?? 0;
   const setIdx = score.sets.length;
-  const setOrder = match.serverOrderBySet?.[setIdx]?.[score.server];
+  const setOrder = match.serverOrderBySet?.[setIdx]?.[team];
   if (setOrder && setOrder.length >= 2) {
-    const initial = match.initialServer || TEAM1;
     const gamesInSet = (score.curSetGamesA ?? 0) + (score.curSetGamesB ?? 0);
-    const completed = score.completedGames ?? 0;
     const firstOfSet = (completed - gamesInSet) % 2 === 0 ? initial : otherTeam(initial);
-    const turn = score.server === firstOfSet ? Math.ceil((gamesInSet + 1) / 2) : Math.floor((gamesInSet + 1) / 2);
-    return setOrder[(turn - 1) % 2];
+    const done = team === firstOfSet ? Math.ceil(gamesInSet / 2) : Math.floor(gamesInSet / 2);
+    return { order: setOrder, done };
   }
-  if (!match.serverOrder) return null;
-  const order = match.serverOrder[score.server];
+  const order = match.serverOrder?.[team];
   if (!order || order.length < 2) return null;
-  const turnIndex = teamServiceTurnIndex(score.server, match.initialServer || TEAM1, score.completedGames ?? 0);
-  return order[(turnIndex - 1) % 2];
+  const done = team === initial ? Math.ceil(completed / 2) : Math.floor(completed / 2);
+  return { order, done };
+}
+
+/**
+ * Imię zawodnika serwującego następny punkt w deblu (null, gdy nie znamy
+ * kolejności). W gemie serwuje zawodnik z kolejności drużyny; w tie-breaku
+ * i super tie-breaku obowiązuje reguła ITF: pierwszy serwujący gra 1 punkt,
+ * potem po 2 punkty kolejno: rywal, który serwowałby następny, partner
+ * pierwszego serwującego, drugi rywal i znów pierwszy serwujący.
+ */
+export function currentServerPlayerName(match, score) {
+  if (!match.isDoubles || !score.server) return null;
+  if (score.game?.isTiebreak) {
+    const x = score.server; // pierwszy serwujący tie-breaka (parzystość gemów)
+    const y = otherTeam(x);
+    const ix = teamOrderInfo(match, score, x), iy = teamOrderInfo(match, score, y);
+    if (!ix || !iy) return null;
+    const n = (parseInt(score.game.a, 10) || 0) + (parseInt(score.game.b, 10) || 0) + 1; // numer punktu
+    if (n === 1) return ix.order[ix.done % 2];
+    switch (Math.floor((n - 2) / 2) % 4) {
+      case 0: return iy.order[iy.done % 2];
+      case 1: return ix.order[(ix.done + 1) % 2];
+      case 2: return iy.order[(iy.done + 1) % 2];
+      default: return ix.order[ix.done % 2];
+    }
+  }
+  const info = teamOrderInfo(match, score, score.server);
+  if (!info) return null;
+  return info.order[info.done % 2];
 }
 
 // Best-effort wykrycie "piłki meczowej" (do ewentualnego podświetlenia w UI).

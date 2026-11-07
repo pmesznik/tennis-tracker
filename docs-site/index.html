@@ -285,7 +285,7 @@
           <div class="tagline">Dokumentacja projektu</div>
         </div>
       </div>
-      <div class="version-pill"><span class="dot"></span>v0.19.0</div>
+      <div class="version-pill"><span class="dot"></span>v0.20.0</div>
     </header>
 
     <p class="lede">
@@ -593,6 +593,19 @@
       </p>
     </section>
 
+    <section id="poprawki">
+      <div class="eyebrow">Przebieg meczu</div>
+      <h2>Poprawki w trakcie i po meczu, nowe formaty</h2>
+      <p>
+        W menu meczu na żywo (trzy kropki) można też zamienić pierwszego serwującego, jeśli na starcie wskazano złą stronę: aplikacja odwraca serwującego
+        w każdym zapisanym punkcie, więc wynik i statystyki serwisu przeliczają się od nowa (<code>matchEdit.js</code>). W podsumowaniu meczu są przyciski
+        „Popraw imiona i nazwiska” oraz, dla wyniku wpisanego ręcznie, „Popraw wynik”. W deblu w tie-breaku i super tie-breaku aplikacja pokazuje konkretnego
+        serwującego według reguły ITF (1 punkt pierwszy serwujący, potem po 2: rywal, partner, drugi rywal, pierwszy serwujący).
+        Nowe zestawy zasad: „Krótkie sety do 4 gemów + super tie-break” (tie-break do 7 przy 3:3) oraz „Do 2 wygranych setów, tie-break do 10 w 3. secie”
+        (pole <code>finalSetTiebreakTo</code>).
+      </p>
+    </section>
+
     <section id="aktualizacje">
       <div class="eyebrow">Aktualizacje</div>
       <h2>Automatyczna aktualizacja aplikacji</h2>
@@ -847,7 +860,7 @@ npx cap sync android</code></pre>
 
     <footer>
       <span>Tennis Tracker — dokumentacja wewnętrzna projektu.</span>
-      <span>Wygenerowano dla wersji <span class="mono">v0.19.0</span></span>
+      <span>Wygenerowano dla wersji <span class="mono">v0.20.0</span></span>
     </footer>
   </main>
 </div>
