@@ -46,7 +46,7 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
   let score = null;
   if (match.endReason) {
     setsRow = earlySetsRow(match);
-    score = computeScore(match.rules, match.pointLog, match.initialServer || TEAM1, match.startedAt);
+    score = match.rules ? computeScore(match.rules, match.pointLog, match.initialServer || TEAM1, match.startedAt) : null;
   } else if (match.status === "completed" && match.finalSetsOverride) {
     setsRow = match.finalSetsOverride.map((s) => formatSetsString([s]));
   } else {
@@ -201,7 +201,7 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
           {match.status === "in_progress" && (
             <button style={styles.primaryBtn} onClick={() => onContinue(match.id)}><Icon name="play" size={22} />{tr("summary.continueMatch")}</button>
           )}
-          {match.endReason && onContinue && (
+          {match.endReason && match.rules && onContinue && (
             <button style={styles.secondaryBtn} onClick={handleResume}><Icon name="undo" size={19} />{tr("summary.resumeMatch")}</button>
           )}
           <button

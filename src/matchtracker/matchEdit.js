@@ -77,8 +77,9 @@ export function manualRowsToSets(rows) {
             if (loser != null) tiebreak = aWon ? { a: win(loser), b: loser } : { a: loser, b: win(loser) };
           }
         }
-        if (tiebreak) return { a, b, tiebreak };
+        if (tiebreak && !r.partial) return { a, b, tiebreak };
       }
+      if (r.partial) return { a, b, partial: true };
       return { a, b };
     });
 }
@@ -87,7 +88,7 @@ export function setsToManualRows(sets) {
   return (sets || []).map((s) => ({
     a: String(s.a), b: String(s.b),
     tbA: s.tiebreak ? String(s.tiebreak.a) : "", tbB: s.tiebreak ? String(s.tiebreak.b) : "",
-    superTb: !!s.isSuperTiebreak,
+    superTb: !!s.isSuperTiebreak, partial: !!s.partial,
   }));
 }
 
@@ -101,7 +102,7 @@ export function validateManualRows(rows) {
     filled++;
     const a = parseInt(r.a, 10), b = parseInt(r.b, 10);
     if (!Number.isFinite(a) || !Number.isFinite(b) || a < 0 || b < 0) return "setup.errIncomplete";
-    if (a === b) return "setup.errDraw";
+    if (a === b && !r.partial) return "setup.errDraw";
   }
   return filled === 0 ? "setup.alertNeedOneSet" : null;
 }

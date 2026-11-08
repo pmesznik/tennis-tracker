@@ -11,6 +11,12 @@ export const END_REASONS = ["retired", "walkover", "disqualified"];
 // ({partial:true}, nie liczy się jako wygrany set, ale gemy się liczą).
 // Walkower nie ma wyniku (brak setów).
 export function earlyResult(m) {
+  // Wynik wpisany ręcznie ("Zapisz wynik"): sety są podane wprost, niedokończony
+  // set ma flagę partial. Walkower nie ma setów.
+  if (!m.rules && Array.isArray(m.finalSetsOverride)) {
+    const sets = m.endReason === "walkover" ? [] : m.finalSetsOverride;
+    return { sets, winner: m.resultWinner || null };
+  }
   const sc = m.rules
     ? computeScore(m.rules, m.pointLog || [], m.initialServer || "team1", m.startedAt)
     : { sets: [], curSetGamesA: 0, curSetGamesB: 0 };
@@ -22,8 +28,8 @@ export function earlyResult(m) {
   return { sets, winner: m.resultWinner || null };
 }
 
-// Krótka etykieta do listy / udostępniania: "krecz", "w/o", "dyskw.".
-export const END_TAG = { retired: "krecz", walkover: "w/o", disqualified: "dyskw." };
+// Krótka etykieta do listy / udostępniania: "krecz", "walkower", "dyskw.".
+export const END_TAG = { retired: "krecz", walkover: "walkower", disqualified: "dyskw." };
 
 // Wiersz setów (tablica napisów) dla zakończonego przedwcześnie meczu.
 export function earlySetsRow(m) {

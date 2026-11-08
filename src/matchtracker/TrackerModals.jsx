@@ -180,7 +180,7 @@ export function EndMatchModal({ labels, onConfirm, onClose }) {
 // Wiersz seta w edytorze wyniku: gemy A–B, a przy 7-6 (itp.) drugi rząd z
 // polami tie-breaka tak samo jak dla seta. Przy trzecim secie można wybrać
 // super tie-break (wtedy pola to punkty, np. 10–7).
-export function ManualSetRow({ row, index, onChange, onRemove }) {
+export function ManualSetRow({ row, index, onChange, onRemove, allowPartial }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
   const inp = { ...styles.input, width: 56, textAlign: "center" };
@@ -188,7 +188,7 @@ export function ManualSetRow({ row, index, onChange, onRemove }) {
     <input style={inp} type="number" inputMode="numeric" min="0" value={row[key] ?? ""} placeholder={ph} aria-label={label}
       onChange={(e) => onChange({ [key]: e.target.value })} />
   );
-  const showTb = !row.superTb && (isTiebreakScore(row.a, row.b) || row.tbA || row.tbB);
+  const showTb = !row.superTb && !row.partial && (isTiebreakScore(row.a, row.b) || row.tbA || row.tbB);
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -206,7 +206,12 @@ export function ManualSetRow({ row, index, onChange, onRemove }) {
           {num("tbB", "5", tr("common.setTbLabel", { n: index + 1, side: 2 }))}
         </div>
       )}
-      {index >= 2 && (
+      {allowPartial && (
+        <div style={{ marginTop: 8, marginLeft: 48 }}>
+          <Chip label={tr("setup.partialSet")} active={!!row.partial} onClick={() => onChange({ partial: !row.partial, superTb: false, tbA: "", tbB: "" })} />
+        </div>
+      )}
+      {index >= 2 && !row.partial && (
         <div style={{ marginTop: 8, marginLeft: 48 }}>
           <Chip label={tr("setup.superTbRow")} active={row.superTb} onClick={() => onChange({ superTb: !row.superTb, tbA: "", tbB: "" })} />
         </div>

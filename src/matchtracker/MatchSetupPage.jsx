@@ -195,6 +195,10 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
   const [matchDate, setMatchDate] = useState(() => localDateStr());
   const [manualSets, setManualSets] = useState([{ a: "", b: "", tbA: "", tbB: "", superTb: false }]);
   const [showDepthModal, setShowDepthModal] = useState(false);
+  // Rodzaj ręcznie wpisanego wyniku: normalny, krecz (wycofanie w trakcie) albo
+  // walkower (rywal się nie stawił). loser = strona, która się wycofała / nie stawiła.
+  const [resultKind, setResultKind] = useState("normal");
+  const [loser, setLoser] = useState(null);
 
   // Indeks graczy (wszystkie znane nazwiska + z kim kto grał) liczony raz z
   // historii meczów — ten sam pure-derive wzorzec co computeScore(), żadnego
@@ -241,9 +245,13 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
   const updateManualSet = (i, patch) => setManualSets((s) => s.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
 
   const handleSaveManual = () => {
-    const err = validateManualRows(manualSets);
-    if (err) { alert(tr(err)); return; }
-    const finalSets = manualRowsToSets(manualSets);
+    const early = resultKind !== "normal";
+    if (early && !loser) { alert(tr("setup.errNeedLoser")); return; }
+    if (resultKind !== "walkover") {
+      const err = validateManualRows(manualSets);
+      if (err) { alert(tr(err)); return; }
+    }
+    const finalSets = resultKind === "walkover" ? [] : manualRowsToSets(manualSets);
     const match = linkToTie(storage.createMatch({
       ...baseData(),
       rules: null,
@@ -251,6 +259,7 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
       status: "completed",
       pointLog: [],
       finalSetsOverride: finalSets,
+      ...(early ? { endReason: resultKind, resultWinner: loser === "team1" ? "team2" : "team1", endedAt: Date.now() } : {}),
     }));
     onCreated(match);
   };
@@ -345,11 +354,43 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
             <span style={styles.label}>{tr("setup.matchDate")}</span>
             <input style={{ ...styles.input, marginBottom: 16 }} type="date" value={matchDate} max={localDateStr()}
               onChange={(e) => setMatchDate(e.target.value)} aria-label={tr("setup.matchDate")} />
-            <div style={{ fontSize: 12, color: t.textSub, lineHeight: 1.45, marginBottom: 14 }}>{tr("setup.manualHint")}</div>
-            {manualSets.map((row, i) => (
-              <ManualSetRow key={i} row={row} index={i} onChange={(patch) => updateManualSet(i, patch)} onRemove={() => removeManualSet(i)} />
-            ))}
-            {manualSets.length < 5 && <button style={styles.secondaryBtn} onClick={addManualSet}><Icon name="add" size={18} />{tr("setup.addSet")}</button>}
+            <span style={styles.label}>{tr("setup.resultKind")}</span>
+            <div role="group" aria-label={tr("setup.resultKind")} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+              {[["normal", tr("setup.kindNormal")], ["retired", tr("tracker.reasonRetired")], ["walkover", tr("tracker.reasonWalkover")]].map(([k, label]) => (
+                <Chip key={k} label={label} active={resultKind === k} onClick={() => { setResultKind(k); setLoser(null); }} />
+              ))}
+            </div>
+            {resultKind !== "normal" && (
+              <>
+                <div style={{ fontSize: 12, color: t.textSub, lineHeight: 1.45, marginBottom: 10 }}>{tr(`tracker.reasonHint.${resultKind}`)}</div>
+                <span style={styles.label}>{tr(`tracker.whoLoses.${resultKind}`)}</span>
+                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                  {["team1", "team2"].map((team) => {
+                    const label = (team === "team1" ? team1Names() : team2Names()).join(" / ");
+                    const on = loser === team;
+                    return (
+                      <button key={team} onClick={() => setLoser(team)} aria-pressed={on} style={{
+                        flex: 1, minHeight: 52, padding: "8px 10px", borderRadius: t.rMd, cursor: "pointer", fontFamily: "inherit",
+                        fontSize: 14, fontWeight: 700, color: on ? t.accent : t.text,
+                        border: `2px solid ${on ? t.accent : t.borderStrong}`, background: on ? `${t.accent}18` : t.surfaceElevated,
+                      }}>{on ? "✓ " : ""}{label}</button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            {resultKind !== "walkover" && (
+              <>
+                <div style={{ fontSize: 12, color: t.textSub, lineHeight: 1.45, marginBottom: 14 }}>
+                  {resultKind === "retired" ? tr("setup.retiredScoreHint") : tr("setup.manualHint")}
+                </div>
+                {manualSets.map((row, i) => (
+                  <ManualSetRow key={i} row={row} index={i} allowPartial={resultKind === "retired"}
+                    onChange={(patch) => updateManualSet(i, patch)} onRemove={() => removeManualSet(i)} />
+                ))}
+                {manualSets.length < 5 && <button style={styles.secondaryBtn} onClick={addManualSet}><Icon name="add" size={18} />{tr("setup.addSet")}</button>}
+              </>
+            )}
           </>
         )}
       </ScrollBody>

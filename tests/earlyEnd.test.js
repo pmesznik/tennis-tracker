@@ -28,7 +28,7 @@ describe("mecz zakończony przed czasem", () => {
 
   it("walkower: zwycięstwo bez setów, gemów i punktów", () => {
     const m = match({ status: "completed", endReason: "walkover", resultWinner: "team2", pointLog: [] });
-    expect(earlySetsRow(m)).toEqual(["w/o"]);
+    expect(earlySetsRow(m)).toEqual(["walkower"]);
     const h = computeH2H([m], "Ala", "Ola");
     expect(h.b.matchesWon).toBe(1);
     expect(h.a.gamesWon + h.b.gamesWon).toBe(0);
