@@ -299,7 +299,7 @@ export default function App() {
             onNewMatch={() => setView({ name: "setup", mode: "track" })}
             onHistory={goToList}
             onStats={() => setView({ name: "h2h", fromStart: true })}
-            onMyStats={(name) => setView({ name: "h2h", a: name, fromStart: true })}
+            onMyStats={(name) => setView({ name: "h2h", a: name, fromStart: true, scope: "mine" })}
             onOthers={() => setView({ name: "others" })}
             onOpenMatch={(m) => {
               setActiveSurface(m.surface || null);
@@ -314,7 +314,7 @@ export default function App() {
             onBack={goToStart}
             onNewMatch={() => setView({ name: "setup", mode: "track", others: true })}
             onSaveResult={() => setView({ name: "setup", mode: "manual", others: true })}
-            onStats={() => setView({ name: "h2h", fromOthers: true })}
+            onStats={() => setView({ name: "h2h", fromOthers: true, scope: "others" })}
             onOpenMatch={(m) => {
               setActiveSurface(m.surface || null);
               setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id } : { name: "summary", matchId: m.id });
@@ -433,6 +433,7 @@ export default function App() {
             initialA={view.a}
             initialB={view.b}
             initialDoubles={view.dbl}
+            scope={view.scope}
             onBack={view.fromMatchId ? () => setView({ name: "summary", matchId: view.fromMatchId, tieId: view.tieId }) : view.fromStart ? goToStart : view.fromOthers ? () => setView({ name: "others" }) : goToList}
           />
         )}

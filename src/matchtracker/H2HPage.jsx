@@ -5,6 +5,7 @@ import { useThemeCtx } from "../theme.js";
 import { useLang, surfaceLabel } from "../i18n.js";
 import { TopBar, FullScreen, ScrollBody, Card, ShareIcon, Icon } from "./ui.jsx";
 import * as storage from "./storage.js";
+import { getProfile, isOthersMatch } from "./profile.js";
 import {
   listH2HPlayers, listH2HOpponents, listH2HTeams, listH2HTeamOpponents,
   computeH2H, computePlayerStats, pct, h2hText, normName, teamKey,
@@ -137,10 +138,16 @@ function TabBtn({ active, onClick, children, t }) {
   );
 }
 
-export default function H2HPage({ initialA, initialB, initialDoubles, onBack }) {
+export default function H2HPage({ initialA, initialB, initialDoubles, scope, onBack }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
-  const matches = useMemo(() => storage.listMatches(), []);
+  // scope: "mine" = tylko mecze głównego zawodnika, "others" = mecze, w których nie gra.
+  const matches = useMemo(() => {
+    const all = storage.listMatches();
+    const p = getProfile();
+    if (!scope || !p.name) return all;
+    return all.filter((m) => isOthersMatch(p, m) === (scope === "others"));
+  }, [scope]);
   const [kind, setKind] = useState(initialDoubles ? "doubles" : "singles");
   const [mode, setMode] = useState(initialB ? "pair" : "player");
   const [nameA, setNameA] = useState(initialA || "");
@@ -187,7 +194,7 @@ export default function H2HPage({ initialA, initialB, initialDoubles, onBack }) 
 
   return (
     <FullScreen>
-      <TopBar title={tr("h2h.title")} onBack={onBack} />
+      <TopBar title={scope === "mine" ? tr("start.myStats") : scope === "others" ? tr("others.stats") + " · " + tr("others.title") : tr("h2h.title")} onBack={onBack} />
       <ScrollBody style={{ padding: 16 }}>
         {!hasAny ? (
           <div style={styles.centered}><span style={{ maxWidth: 280 }}>{tr("h2h.empty")}</span></div>

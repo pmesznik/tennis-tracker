@@ -77,13 +77,10 @@ export default function StartPage({ editing, onDone, onNewMatch, onHistory, onSt
       <button style={styles.primaryBtn} onClick={onNewMatch}><Icon name="add" size={22} />{tr("list.newMatch")}</button>
       <div style={{ display: "flex", gap: 10, margin: "10px 0 16px" }}>
         <button style={styles.secondaryBtn} onClick={onHistory}><Icon name="calendar" size={19} />{tr("start.history")}</button>
-        <button style={styles.secondaryBtn} onClick={onStats}><Icon name="stats" size={19} />{tr("start.stats")}</button>
-      </div>
-      {profile.name && (
-        <button style={{ ...styles.secondaryBtn, marginBottom: 16 }} onClick={() => onMyStats(profile.name)}>
+        <button style={styles.secondaryBtn} onClick={() => (profile.name ? onMyStats(profile.name) : onStats())}>
           <Icon name="stats" size={19} />{tr("start.myStats")}
         </button>
-      )}
+      </div>
       {last && (
         <button onClick={() => onOpenMatch(last)} style={{
           display: "block", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", color: t.text,
