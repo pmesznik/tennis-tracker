@@ -191,6 +191,8 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
     onSurfaceChange?.(val || null);
   };
 
+  // Data meczu przy ręcznym zapisie wyniku (domyślnie dzisiaj, można cofnąć).
+  const [matchDate, setMatchDate] = useState(() => localDateStr());
   const [manualSets, setManualSets] = useState([{ a: "", b: "", tbA: "", tbB: "", superTb: false }]);
   const [showDepthModal, setShowDepthModal] = useState(false);
 
@@ -211,7 +213,7 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
     team1: { names: team1Names() },
     team2: { names: team2Names() },
     isDoubles,
-    date: localDateStr(),
+    date: isManual && /^\d{4}-\d{2}-\d{2}$/.test(matchDate) ? matchDate : localDateStr(),
     surface: surface || "Twarda",
     teamTieId: tieContext?.tieId || null,
   });
@@ -340,6 +342,9 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
 
         {tab === "wynik" && isManual && (
           <>
+            <span style={styles.label}>{tr("setup.matchDate")}</span>
+            <input style={{ ...styles.input, marginBottom: 16 }} type="date" value={matchDate} max={localDateStr()}
+              onChange={(e) => setMatchDate(e.target.value)} aria-label={tr("setup.matchDate")} />
             <div style={{ fontSize: 12, color: t.textSub, lineHeight: 1.45, marginBottom: 14 }}>{tr("setup.manualHint")}</div>
             {manualSets.map((row, i) => (
               <ManualSetRow key={i} row={row} index={i} onChange={(patch) => updateManualSet(i, patch)} onRemove={() => removeManualSet(i)} />
