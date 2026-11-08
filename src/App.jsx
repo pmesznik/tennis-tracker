@@ -5,6 +5,7 @@ import { LangContext, getStoredLang, setStoredLang, translate } from "./i18n.js"
 import { APP_NAME, APP_VERSION } from "./version.js";
 import MatchListPage from "./matchtracker/MatchListPage.jsx";
 import StartPage from "./matchtracker/StartPage.jsx";
+import OthersPage from "./matchtracker/OthersPage.jsx";
 import MatchSetupPage from "./matchtracker/MatchSetupPage.jsx";
 import MatchTrackerPage from "./matchtracker/MatchTrackerPage.jsx";
 import UpdateBanner from "./UpdateBanner.jsx";
@@ -194,6 +195,10 @@ export default function App() {
       if (popBack()) return true;
       const v = viewRef.current;
       if (v.name === "start") return false;
+      if (v.name === "others") { goToStart(); return true; }
+      if (v.name === "setup" && v.others && !v.tieId) { setView({ name: "others" }); return true; }
+      if (v.name === "h2h" && v.fromStart) { goToStart(); return true; }
+      if (v.name === "h2h" && v.fromOthers) { setView({ name: "others" }); return true; }
       if (v.name === "list") { goToStart(); return true; }
       if (v.name === "setup" || v.name === "tracker" || v.name === "summary") {
         if (v.tieId) setView({ name: "tieDetail", tieId: v.tieId });
@@ -295,6 +300,21 @@ export default function App() {
             onHistory={goToList}
             onStats={() => setView({ name: "h2h", fromStart: true })}
             onMyStats={(name) => setView({ name: "h2h", a: name, fromStart: true })}
+            onOthers={() => setView({ name: "others" })}
+            onOpenMatch={(m) => {
+              setActiveSurface(m.surface || null);
+              setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id } : { name: "summary", matchId: m.id });
+            }}
+          />
+        )}
+
+        {view.name === "others" && (
+          <OthersPage
+            key={listVersion}
+            onBack={goToStart}
+            onNewMatch={() => setView({ name: "setup", mode: "track", others: true })}
+            onSaveResult={() => setView({ name: "setup", mode: "manual", others: true })}
+            onStats={() => setView({ name: "h2h", fromOthers: true })}
             onOpenMatch={(m) => {
               setActiveSurface(m.surface || null);
               setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id } : { name: "summary", matchId: m.id });
@@ -376,7 +396,8 @@ export default function App() {
         {view.name === "setup" && (
           <MatchSetupPage
             mode={view.mode}
-            onCancel={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : goToList}
+            noAutofill={!!view.others}
+            onCancel={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : view.others ? () => setView({ name: "others" }) : goToList}
             onSurfaceChange={setActiveSurface}
             tieContext={(() => {
               if (!view.tieId) return null;
@@ -412,8 +433,7 @@ export default function App() {
             initialA={view.a}
             initialB={view.b}
             initialDoubles={view.dbl}
-            onBack={view.fromMatchId ? () => setView({ name: "summary", matchId: view.fromMatchId, tieId: view.tieId }) : goToList}
-            onBackHome={goToStart}
+            onBack={view.fromMatchId ? () => setView({ name: "summary", matchId: view.fromMatchId, tieId: view.tieId }) : view.fromStart ? goToStart : view.fromOthers ? () => setView({ name: "others" }) : goToList}
           />
         )}
 

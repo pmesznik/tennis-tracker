@@ -149,7 +149,7 @@ function DepthPickerModal({ onPick, onClose }) {
   );
 }
 
-export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceChange, tieContext }) {
+export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, onSurfaceChange, tieContext }) {
   const { t, styles, palette } = useThemeCtx();
   const { lang, t: tr } = useLang();
   const isManual = mode === "manual";
@@ -160,7 +160,7 @@ export default function MatchSetupPage({ mode, onCancel, onCreated, onSurfaceCha
   // „mecze innych osób" i nie w meczu drużynowym).
   const [t1a, setT1a] = useState(() => {
     const p = getProfile();
-    return p.name && !p.others && !tieContext ? p.name : "";
+    return p.name && !noAutofill && !tieContext ? p.name : "";
   });
   const [t1b, setT1b] = useState("");
   const [t2a, setT2a] = useState("");

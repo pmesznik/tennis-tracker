@@ -24,7 +24,7 @@ function Seg({ t, options, value, onChange, label }) {
   );
 }
 
-export default function StartPage({ editing, onDone, onNewMatch, onHistory, onStats, onMyStats, onOpenMatch }) {
+export default function StartPage({ editing, onDone, onNewMatch, onHistory, onStats, onMyStats, onOthers, onOpenMatch }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
   const [profile, setProfile] = useState(() => getProfile());
@@ -57,10 +57,6 @@ export default function StartPage({ editing, onDone, onNewMatch, onHistory, onSt
         <span style={styles.label}>{tr("start.sideLabel")}</span>
         <Seg t={t} label={tr("start.sideLabel")} value={draft.side} onChange={(side) => setDraft({ ...draft, side })}
           options={[["left", tr("start.sideLeft")], ["right", tr("start.sideRight")]]} />
-        <span style={styles.label}>{tr("start.modeLabel")}</span>
-        <Seg t={t} label={tr("start.modeLabel")} value={draft.others} onChange={(others) => setDraft({ ...draft, others })}
-          options={[[false, tr("start.modeMine")], [true, tr("start.modeOthers")]]} />
-        <div style={{ fontSize: 12.5, color: t.textSub, lineHeight: 1.45, marginBottom: 20 }}>{tr("start.modeHint")}</div>
         <button style={styles.primaryBtn} onClick={save}>{tr(first ? "start.begin" : "common.save")}</button>
         {!first && <button style={{ ...styles.secondaryBtn, marginTop: 10 }} onClick={() => { setDraft(profile); setConfigOpen(false); }}>{tr("common.cancel")}</button>}
       </div>
@@ -69,7 +65,6 @@ export default function StartPage({ editing, onDone, onNewMatch, onHistory, onSt
 
   const last = storage.listMatches()[0];
   const lastName = last && `${teamLabel("team1", last.team1.names, last.team2.names, tr("common.player1"), tr("common.player2"))} – ${teamLabel("team2", last.team1.names, last.team2.names, tr("common.player1"), tr("common.player2"))}`;
-  const toggleOthers = () => setProfile(saveProfile({ ...profile, others: !profile.others }));
   const fn = firstName(profile.name);
 
   return (
@@ -78,9 +73,7 @@ export default function StartPage({ editing, onDone, onNewMatch, onHistory, onSt
       <div style={{ fontSize: 24, fontWeight: 750, textAlign: "center", marginBottom: 4 }}>
         {fn ? tr("start.hello", { name: fn }) : tr("start.helloNoName")}
       </div>
-      <div style={{ fontSize: 13.5, color: t.textSub, textAlign: "center", marginBottom: 22 }}>
-        {tr(profile.others ? "start.nowOthers" : "start.nowMine")}
-      </div>
+      <div style={{ height: 18 }} />
       <button style={styles.primaryBtn} onClick={onNewMatch}><Icon name="add" size={22} />{tr("list.newMatch")}</button>
       <div style={{ display: "flex", gap: 10, margin: "10px 0 16px" }}>
         <button style={styles.secondaryBtn} onClick={onHistory}><Icon name="calendar" size={19} />{tr("start.history")}</button>
@@ -109,8 +102,8 @@ export default function StartPage({ editing, onDone, onNewMatch, onHistory, onSt
           <button style={{ ...styles.secondaryBtn, fontSize: 13 }} onClick={() => { setDraft(profile); setConfigOpen(true); }}>
             <Icon name="edit" size={17} />{tr("start.changeSettings")}
           </button>
-          <button style={{ ...styles.secondaryBtn, fontSize: 13 }} onClick={toggleOthers}>
-            {tr(profile.others ? "start.switchToMine" : "start.switchToOthers")}
+          <button style={{ ...styles.secondaryBtn, fontSize: 13 }} onClick={onOthers}>
+            <Icon name="calendar" size={17} />{tr("start.switchToOthers")}
           </button>
         </div>
       </div>

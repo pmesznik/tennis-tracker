@@ -82,12 +82,13 @@ function MatchCard({ match, onOpen, onDelete }) {
   );
 }
 
-export default function MatchListPage({ onNewMatch, onSaveResult, onOpenMatch }) {
+export default function MatchListPage({ onNewMatch, onSaveResult, onOpenMatch, filter, extra }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
-  const [matches, setMatches] = useState(() => storage.listMatches());
+  const load = () => (filter ? storage.listMatches().filter(filter) : storage.listMatches());
+  const [matches, setMatches] = useState(load);
 
-  const refresh = () => setMatches(storage.listMatches());
+  const refresh = () => setMatches(load());
 
   const handleDelete = (id) => {
     const match = storage.getMatch(id);
@@ -103,6 +104,7 @@ export default function MatchListPage({ onNewMatch, onSaveResult, onOpenMatch })
         <button style={styles.primaryBtn} onClick={onNewMatch}><Icon name="add" size={22} />{tr("list.newMatch")}</button>
         <button style={styles.secondaryBtn} onClick={onSaveResult}><Icon name="edit" size={19} />{tr("list.saveResult")}</button>
       </div>
+      {extra}
 
       {matches.length === 0 ? (
         <div style={styles.centered}>
