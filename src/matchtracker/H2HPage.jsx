@@ -148,7 +148,16 @@ export default function H2HPage({ initialA, initialB, initialDoubles, scope, onB
     if (!scope || !p.name) return all;
     return all.filter((m) => isOthersMatch(p, m) === (scope === "others"));
   }, [scope]);
-  const [kind, setKind] = useState(initialDoubles ? "doubles" : "singles");
+  const [kind, setKind] = useState(() => {
+    if (initialDoubles) return "doubles";
+    // „Moje statystyki” dla kogoś, kto gra tylko debla, od razu pokazują debla.
+    if (scope === "mine" && initialA && !initialB) {
+      const inSingles = listH2HPlayers(matches, "singles").some((o) => o.key === normName(initialA));
+      const inDoubles = listH2HPlayers(matches, "doubles").some((o) => o.key === normName(initialA));
+      if (!inSingles && inDoubles) return "doubles";
+    }
+    return "singles";
+  });
   const [mode, setMode] = useState(initialB ? "pair" : "player");
   const [nameA, setNameA] = useState(initialA || "");
   const [nameB, setNameB] = useState(initialB || "");

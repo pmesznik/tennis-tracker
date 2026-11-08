@@ -14,7 +14,7 @@ import { StatRow, Donut, FlowChart, sideColors } from "./charts.jsx";
 import { renderStatsPng, shareStatsPng } from "./statsImage.js";
 import { earlySetsRow } from "./earlyEnd.js";
 import { EditNamesModal, EditScoreModal } from "./TrackerModals.jsx";
-import { buildRenamePatch, manualRowsToSets, setsToManualRows } from "./matchEdit.js";
+import { buildRenamePatch, manualRowsToSets, setsToManualRows, validateManualRows } from "./matchEdit.js";
 
 const STAT_ROWS = [
   ["aces", "stat.aces"],
@@ -82,8 +82,9 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
     setTick((x) => x + 1);
   };
   const handleSaveScore = (rows) => {
+    const err = validateManualRows(rows);
+    if (err) { alert(tr(err)); return; }
     const sets = manualRowsToSets(rows);
-    if (sets.length === 0) { alert(tr("setup.alertNeedOneSet")); return; }
     storage.updateMatch(match.id, { finalSetsOverride: sets });
     setEditScore(false);
     setTick((x) => x + 1);

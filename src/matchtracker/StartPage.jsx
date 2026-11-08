@@ -1,6 +1,7 @@
 // Tennis Tracker — strona startowa: konfiguracja przy pierwszym uruchomieniu
 // (imię głównego zawodnika, strona jego guzika), potem powitanie ze skrótami.
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { pushBack } from "../backStack.js";
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
 import { Icon } from "./ui.jsx";
@@ -24,13 +25,19 @@ function Seg({ t, options, value, onChange, label }) {
   );
 }
 
-export default function StartPage({ editing, onDone, onNewMatch, onHistory, onStats, onMyStats, onOthers, onOpenMatch }) {
+export default function StartPage({ onNewMatch, onHistory, onStats, onMyStats, onOthers, onOpenMatch }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
   const [profile, setProfile] = useState(() => getProfile());
-  const [configOpen, setConfigOpen] = useState(!!editing || !getProfile().done);
+  const [configOpen, setConfigOpen] = useState(() => !getProfile().done);
   const [draft, setDraft] = useState(profile);
-  const known = buildPlayerIndex(storage.listMatches()).allNames;
+  const matchList = useMemo(() => storage.listMatches(), [configOpen]);
+  const known = useMemo(() => buildPlayerIndex(matchList).allNames, [matchList]);
+  // Przy edycji ustawień przycisk „wstecz” zamyka formularz, a nie aplikację.
+  useEffect(() => {
+    if (!configOpen || !profile.done) return undefined;
+    return pushBack(() => { setDraft(profile); setConfigOpen(false); });
+  }, [configOpen, profile]);
 
   const header = (
     <div style={{ textAlign: "center", padding: "28px 0 18px" }}>
@@ -40,10 +47,11 @@ export default function StartPage({ editing, onDone, onNewMatch, onHistory, onSt
 
   if (configOpen) {
     const first = !profile.done;
+    const nameOk = draft.name.trim().length > 0;
     const save = () => {
+      if (!nameOk) { alert(tr("profile.nameRequired")); return; }
       setProfile(saveProfile(draft));
       setConfigOpen(false);
-      onDone?.();
     };
     return (
       <div style={styles.page}>
@@ -63,7 +71,7 @@ export default function StartPage({ editing, onDone, onNewMatch, onHistory, onSt
     );
   }
 
-  const last = storage.listMatches()[0];
+  const last = matchList[0];
   const lastName = last && `${teamLabel("team1", last.team1.names, last.team2.names, tr("common.player1"), tr("common.player2"))} – ${teamLabel("team2", last.team1.names, last.team2.names, tr("common.player1"), tr("common.player2"))}`;
   const fn = firstName(profile.name);
 

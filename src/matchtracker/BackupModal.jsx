@@ -19,8 +19,8 @@ export default function BackupModal({ onClose, onImported }) {
     if (!file) return;
     setBusy(true);
     try {
-      const { matchCount } = await importBackupFile(file);
-      alert(tr("backup.importSuccess", { n: matchCount }));
+      const { matchCount, skipped } = await importBackupFile(file);
+      alert(tr("backup.importSuccess", { n: matchCount }) + (skipped ? " " + tr("backup.skipped", { n: skipped }) : ""));
       onImported?.();
       onClose();
     } catch {

@@ -41,3 +41,10 @@ export function averagePointDurationMs(pointLog, startedAt) {
   if (durations.length === 0) return null;
   return durations.reduce((a, b) => a + b, 0) / durations.length;
 }
+
+// Dzisiejsza data lokalna jako YYYY-MM-DD (toISOString daje datę UTC, więc tuż po
+// północy czasu polskiego dałoby wczorajszą).
+export function localDateStr(d = new Date()) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}

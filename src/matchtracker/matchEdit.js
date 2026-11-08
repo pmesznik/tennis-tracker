@@ -49,7 +49,7 @@ export function buildSwapServerPatch(match) {
 // Stare pole tb = punkty przegranego nadal jest rozumiane.
 export const isTiebreakScore = (a, b) => {
   const x = parseInt(a, 10), y = parseInt(b, 10);
-  return Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) === 1 && Math.min(x, y) >= 3;
+  return Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) === 1 && [4, 7, 9].includes(Math.max(x, y)); // 4:3, 7:6, 9:8
 };
 
 export function manualRowsToSets(rows) {
@@ -58,7 +58,7 @@ export function manualRowsToSets(rows) {
     .map((r) => {
       const a = parseInt(r.a, 10), b = parseInt(r.b, 10);
       if (r.superTb) return { a, b, isSuperTiebreak: true };
-      if (Math.abs(a - b) === 1 && Math.max(a, b) >= 4) {
+      if (isTiebreakScore(a, b)) {
         const num = (v) => { const n = parseInt(v, 10); return v !== "" && v != null && Number.isFinite(n) && n >= 0 ? n : null; };
         const ta = num(r.tbA), tb = num(r.tbB), legacy = num(r.tb);
         const aWon = a > b;
@@ -68,9 +68,14 @@ export function manualRowsToSets(rows) {
           // zwycięzca seta wygrywa tie-break; przy odwróconych wartościach zamieniamy
           tiebreak = (ta > tb) === aWon ? { a: ta, b: tb } : { a: tb, b: ta };
         } else {
-          // jedna liczba (też stare pole tb) = punkty przegranego w tie-breaku
-          const loser = ta ?? tb ?? legacy;
-          if (loser != null) tiebreak = aWon ? { a: win(loser), b: loser } : { a: loser, b: win(loser) };
+          // jedna liczba: w polu przegranego (i stare pole tb) to punkty przegranego;
+          // w polu zwycięzcy wartość powyżej 7 daje przegranego o 2 mniej.
+          const only = ta ?? tb ?? legacy;
+          if (only != null) {
+            const inWinnerBox = (ta != null && aWon) || (tb != null && !aWon);
+            const loser = inWinnerBox ? (only > 7 ? only - 2 : null) : only;
+            if (loser != null) tiebreak = aWon ? { a: win(loser), b: loser } : { a: loser, b: win(loser) };
+          }
         }
         if (tiebreak) return { a, b, tiebreak };
       }
@@ -84,4 +89,19 @@ export function setsToManualRows(sets) {
     tbA: s.tiebreak ? String(s.tiebreak.a) : "", tbB: s.tiebreak ? String(s.tiebreak.b) : "",
     superTb: !!s.isSuperTiebreak,
   }));
+}
+
+// Sprawdza wiersze wyniku. Zwraca klucz błędu i18n albo null, gdy wszystko gra.
+export function validateManualRows(rows) {
+  let filled = 0;
+  for (const r of rows) {
+    const hasA = r.a !== "" && r.a != null, hasB = r.b !== "" && r.b != null;
+    if (hasA !== hasB) return "setup.errIncomplete";
+    if (!hasA) continue;
+    filled++;
+    const a = parseInt(r.a, 10), b = parseInt(r.b, 10);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a < 0 || b < 0) return "setup.errIncomplete";
+    if (a === b) return "setup.errDraw";
+  }
+  return filled === 0 ? "setup.alertNeedOneSet" : null;
 }

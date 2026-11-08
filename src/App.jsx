@@ -179,6 +179,12 @@ export default function App() {
     setView({ name: "start" });
     setActiveSurface(null);
   };
+  // Powrót do ekranu, z którego użytkownik wszedł (start, mecze innych osób albo historia).
+  const backTo = (origin) => {
+    if (origin === "start") goToStart();
+    else if (origin === "others") { setView({ name: "others" }); setActiveSurface(null); }
+    else goToList();
+  };
   const goToList = () => {
     setView({ name: "list" });
     setListVersion((v) => v + 1);
@@ -196,15 +202,17 @@ export default function App() {
       const v = viewRef.current;
       if (v.name === "start") return false;
       if (v.name === "others") { goToStart(); return true; }
-      if (v.name === "setup" && v.others && !v.tieId) { setView({ name: "others" }); return true; }
+      if (v.name === "h2h" && v.fromMatchId) { setView({ name: "summary", matchId: v.fromMatchId, tieId: v.tieId, origin: v.origin }); return true; }
       if (v.name === "h2h" && v.fromStart) { goToStart(); return true; }
       if (v.name === "h2h" && v.fromOthers) { setView({ name: "others" }); return true; }
       if (v.name === "list") { goToStart(); return true; }
       if (v.name === "setup" || v.name === "tracker" || v.name === "summary") {
         if (v.tieId) setView({ name: "tieDetail", tieId: v.tieId });
-        else goToList();
+        else backTo(v.origin);
+      } else if (v.name === "tieList") {
+        backTo(v.origin);
       } else if (v.name === "tieSetup" || v.name === "tieDetail") {
-        setView({ name: "tieList" });
+        setView({ name: "tieList", origin: v.origin });
       } else {
         goToList();
       }
@@ -254,6 +262,67 @@ export default function App() {
     );
   }
 
+  // Pasek z menu (kopia zapasowa, drużyny, kolory, styl tablicy, język): wspólny dla
+  // strony startowej i historii; w historii ma dodatkowo strzałkę powrotu.
+  const mainNav = (showBack) => (
+    <nav style={styles.nav}>
+      {showBack && <button onClick={goToStart} aria-label={langCtx.t("common.back")} tabIndex={menuOpen ? -1 : 0} style={{ ...navIconBtn(t), flexShrink: 0, marginRight: 6, background: t.tonal }}><Icon name="back" size={21} /></button>}
+      <span style={styles.navTitle}>
+        <img src={appIcon} width={32} height={32} alt="" style={{ borderRadius: 9, flexShrink: 0 }} />
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", opacity: menuOpen ? 0 : 1, transition: `opacity .2s ${t.ease}` }}>{APP_NAME}</span>
+      </span>
+      {showBack ? (
+      <button onClick={() => setView({ name: "h2h" })} aria-label={langCtx.t("h2h.iconTitle")} title={langCtx.t("h2h.iconTitle")}
+        tabIndex={menuOpen ? -1 : 0} style={{
+          width: 40, height: 40, borderRadius: "50%", cursor: "pointer", flexShrink: 0, marginLeft: "auto", marginRight: 8, padding: 0,
+          background: t.tonalStrong, color: t.accent, border: `1px solid ${t.accent}66`,
+          display: "grid", placeItems: "center", boxShadow: t.elev1,
+          opacity: menuOpen ? 0 : 1, pointerEvents: menuOpen ? "none" : "auto", transition: `opacity .2s ${t.ease}`,
+        }}>
+        <Icon name="stats" size={21} />
+      </button>
+      ) : <span style={{ marginLeft: "auto" }} />}
+      <div ref={menuRef} style={{ position: "relative", width: 42, height: 42, flexShrink: 0 }}>
+        <div style={{
+          position: "absolute", right: 48, top: "50%", transform: "translateY(-50%)",
+          display: "flex", alignItems: "center", gap: 2, padding: menuOpen ? 3 : 0, overflow: "hidden",
+          maxWidth: menuOpen ? 300 : 0, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? "auto" : "none",
+          background: t.glass, WebkitBackdropFilter: "blur(18px) saturate(1.5)", backdropFilter: "blur(18px) saturate(1.5)",
+          border: `1px solid ${menuOpen ? t.glassLine : "transparent"}`, borderRadius: 999, boxShadow: menuOpen ? t.elev1 : "none",
+          transition: `max-width .32s ${t.ease}, opacity .2s ${t.ease}, padding .3s ${t.ease}`,
+        }}>
+          <button onClick={() => { setMenuOpen(false); setShowBackup(true); }} aria-label={langCtx.t("backup.iconTitle")} title={langCtx.t("backup.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
+            <Icon name="save" size={20} />
+          </button>
+          <button onClick={() => { setMenuOpen(false); setView({ name: "tieList", origin: viewRef.current.name === "start" ? "start" : "list" }); }} aria-label={langCtx.t("tie.iconTitle")} title={langCtx.t("tie.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
+            <Icon name="trophy" size={20} />
+          </button>
+          <button onClick={() => { setMenuOpen(false); setShowPalette(true); }} aria-label={langCtx.t("palette.iconTitle")} title={langCtx.t("palette.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
+            <Icon name="palette" size={20} />
+          </button>
+          <button onClick={() => { setMenuOpen(false); setShowScoreStyle(true); }} aria-label={langCtx.t("scoreStyle.iconTitle")} title={langCtx.t("scoreStyle.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
+            <Icon name="timer" size={20} />
+          </button>
+          <span aria-hidden="true" style={{ width: 1, height: 22, background: t.glassLine, margin: "0 3px", flexShrink: 0 }} />
+          {[["pl", "🇵🇱", "Polski"], ["en", "🇬🇧", "English"]].map(([code, flag, name]) => (
+            <button key={code} onClick={() => { langCtx.setLang(code); setMenuOpen(false); }} aria-label={name} aria-pressed={langCtx.lang === code} title={name} tabIndex={menuOpen ? 0 : -1}
+              style={{ ...navIconBtn(t), width: 34, fontSize: 17, background: langCtx.lang === code ? t.tonalStrong : "transparent", opacity: langCtx.lang === code ? 1 : 0.55 }}>
+              {flag}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen} aria-label={langCtx.t(menuOpen ? "menu.close" : "menu.open")} style={{
+          position: "absolute", right: 0, top: 1, width: 40, height: 40, borderRadius: "50%", cursor: "pointer",
+          background: menuOpen ? t.tonalStrong : t.glass, color: t.text, border: `1px solid ${t.glassLine}`,
+          WebkitBackdropFilter: "blur(18px) saturate(1.5)", backdropFilter: "blur(18px) saturate(1.5)",
+          display: "grid", placeItems: "center", padding: 0, boxShadow: t.elev1,
+        }}>
+          <Icon name={menuOpen ? "close" : "more"} size={22} />
+        </button>
+      </div>
+    </nav>
+  );
+
   return (
     <ThemeContext.Provider value={ctx}>
       <LangContext.Provider value={langCtx}>
@@ -294,89 +363,41 @@ export default function App() {
 
       <div style={styles.app}>
         {view.name === "start" && (
+          <>
+          {mainNav(false)}
+          <UpdateBanner />
           <StartPage
             key={listVersion}
-            onNewMatch={() => setView({ name: "setup", mode: "track" })}
+            onNewMatch={() => setView({ name: "setup", mode: "track", origin: "start" })}
             onHistory={goToList}
             onStats={() => setView({ name: "h2h", fromStart: true })}
             onMyStats={(name) => setView({ name: "h2h", a: name, fromStart: true, scope: "mine" })}
             onOthers={() => setView({ name: "others" })}
             onOpenMatch={(m) => {
               setActiveSurface(m.surface || null);
-              setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id } : { name: "summary", matchId: m.id });
+              setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id, origin: "start" } : { name: "summary", matchId: m.id, origin: "start" });
             }}
           />
+          </>
         )}
 
         {view.name === "others" && (
           <OthersPage
             key={listVersion}
             onBack={goToStart}
-            onNewMatch={() => setView({ name: "setup", mode: "track", others: true })}
-            onSaveResult={() => setView({ name: "setup", mode: "manual", others: true })}
+            onNewMatch={() => setView({ name: "setup", mode: "track", origin: "others" })}
+            onSaveResult={() => setView({ name: "setup", mode: "manual", origin: "others" })}
             onStats={() => setView({ name: "h2h", fromOthers: true, scope: "others" })}
             onOpenMatch={(m) => {
               setActiveSurface(m.surface || null);
-              setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id } : { name: "summary", matchId: m.id });
+              setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id, origin: "others" } : { name: "summary", matchId: m.id, origin: "others" });
             }}
           />
         )}
 
         {view.name === "list" && (
           <>
-            <nav style={styles.nav}>
-              <span style={styles.navTitle}>
-                <img src={appIcon} width={32} height={32} alt="" style={{ borderRadius: 9, flexShrink: 0 }} />
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", opacity: menuOpen ? 0 : 1, transition: `opacity .2s ${t.ease}` }}>{APP_NAME}</span>
-              </span>
-              <button onClick={() => setView({ name: "h2h" })} aria-label={langCtx.t("h2h.iconTitle")} title={langCtx.t("h2h.iconTitle")}
-                tabIndex={menuOpen ? -1 : 0} style={{
-                  width: 40, height: 40, borderRadius: "50%", cursor: "pointer", flexShrink: 0, marginLeft: "auto", marginRight: 8, padding: 0,
-                  background: t.tonalStrong, color: t.accent, border: `1px solid ${t.accent}66`,
-                  display: "grid", placeItems: "center", boxShadow: t.elev1,
-                  opacity: menuOpen ? 0 : 1, pointerEvents: menuOpen ? "none" : "auto", transition: `opacity .2s ${t.ease}`,
-                }}>
-                <Icon name="stats" size={21} />
-              </button>
-              <div ref={menuRef} style={{ position: "relative", width: 42, height: 42, flexShrink: 0 }}>
-                <div style={{
-                  position: "absolute", right: 48, top: "50%", transform: "translateY(-50%)",
-                  display: "flex", alignItems: "center", gap: 2, padding: menuOpen ? 3 : 0, overflow: "hidden",
-                  maxWidth: menuOpen ? 300 : 0, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? "auto" : "none",
-                  background: t.glass, WebkitBackdropFilter: "blur(18px) saturate(1.5)", backdropFilter: "blur(18px) saturate(1.5)",
-                  border: `1px solid ${menuOpen ? t.glassLine : "transparent"}`, borderRadius: 999, boxShadow: menuOpen ? t.elev1 : "none",
-                  transition: `max-width .32s ${t.ease}, opacity .2s ${t.ease}, padding .3s ${t.ease}`,
-                }}>
-                  <button onClick={() => { setMenuOpen(false); setShowBackup(true); }} aria-label={langCtx.t("backup.iconTitle")} title={langCtx.t("backup.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
-                    <Icon name="save" size={20} />
-                  </button>
-                  <button onClick={() => { setMenuOpen(false); setView({ name: "tieList" }); }} aria-label={langCtx.t("tie.iconTitle")} title={langCtx.t("tie.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
-                    <Icon name="trophy" size={20} />
-                  </button>
-                  <button onClick={() => { setMenuOpen(false); setShowPalette(true); }} aria-label={langCtx.t("palette.iconTitle")} title={langCtx.t("palette.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
-                    <Icon name="palette" size={20} />
-                  </button>
-                  <button onClick={() => { setMenuOpen(false); setShowScoreStyle(true); }} aria-label={langCtx.t("scoreStyle.iconTitle")} title={langCtx.t("scoreStyle.iconTitle")} style={navIconBtn(t)} tabIndex={menuOpen ? 0 : -1}>
-                    <Icon name="timer" size={20} />
-                  </button>
-                  <span aria-hidden="true" style={{ width: 1, height: 22, background: t.glassLine, margin: "0 3px", flexShrink: 0 }} />
-                  {[["pl", "🇵🇱", "Polski"], ["en", "🇬🇧", "English"]].map(([code, flag, name]) => (
-                    <button key={code} onClick={() => { langCtx.setLang(code); setMenuOpen(false); }} aria-label={name} aria-pressed={langCtx.lang === code} title={name} tabIndex={menuOpen ? 0 : -1}
-                      style={{ ...navIconBtn(t), width: 34, fontSize: 17, background: langCtx.lang === code ? t.tonalStrong : "transparent", opacity: langCtx.lang === code ? 1 : 0.55 }}>
-                      {flag}
-                    </button>
-                  ))}
-                </div>
-                <button onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen} aria-label={langCtx.t(menuOpen ? "menu.close" : "menu.open")} style={{
-                  position: "absolute", right: 0, top: 1, width: 40, height: 40, borderRadius: "50%", cursor: "pointer",
-                  background: menuOpen ? t.tonalStrong : t.glass, color: t.text, border: `1px solid ${t.glassLine}`,
-                  WebkitBackdropFilter: "blur(18px) saturate(1.5)", backdropFilter: "blur(18px) saturate(1.5)",
-                  display: "grid", placeItems: "center", padding: 0, boxShadow: t.elev1,
-                }}>
-                  <Icon name={menuOpen ? "close" : "more"} size={22} />
-                </button>
-              </div>
-            </nav>
+            {mainNav(true)}
             <UpdateBanner />
             <MatchListPage
               key={listVersion}
@@ -396,35 +417,35 @@ export default function App() {
         {view.name === "setup" && (
           <MatchSetupPage
             mode={view.mode}
-            noAutofill={!!view.others}
-            onCancel={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : view.others ? () => setView({ name: "others" }) : goToList}
+            noAutofill={view.origin === "others"}
+            onCancel={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : () => backTo(view.origin)}
             onSurfaceChange={setActiveSurface}
             tieContext={(() => {
               if (!view.tieId) return null;
               const tie = getTeamTie(view.tieId);
               return tie ? { tieId: tie.id, team1Name: tie.team1Name, team2Name: tie.team2Name } : null;
             })()}
-            onCreated={(m) => setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id, tieId: view.tieId } : { name: "summary", matchId: m.id, tieId: view.tieId })}
+            onCreated={(m) => setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id, tieId: view.tieId, origin: view.origin } : { name: "summary", matchId: m.id, tieId: view.tieId, origin: view.origin })}
           />
         )}
 
         {view.name === "tracker" && (
           <MatchTrackerPage
             matchId={view.matchId}
-            onBack={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : goToList}
+            onBack={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : () => backTo(view.origin)}
             onSurfaceChange={setActiveSurface}
-            onFinished={(m) => setView({ name: "summary", matchId: m.id, tieId: view.tieId })}
+            onFinished={(m) => setView({ name: "summary", matchId: m.id, tieId: view.tieId, origin: view.origin })}
           />
         )}
 
         {view.name === "summary" && (
           <MatchSummaryPage
             matchId={view.matchId}
-            onBack={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : goToList}
-            onDeleted={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : goToList}
+            onBack={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : () => backTo(view.origin)}
+            onDeleted={view.tieId ? () => setView({ name: "tieDetail", tieId: view.tieId }) : () => backTo(view.origin)}
             onSurfaceChange={setActiveSurface}
-            onContinue={(id) => setView({ name: "tracker", matchId: id, tieId: view.tieId })}
-            onOpenH2H={(a, b, dbl) => setView({ name: "h2h", a, b, dbl, fromMatchId: view.matchId, tieId: view.tieId })}
+            onContinue={(id) => setView({ name: "tracker", matchId: id, tieId: view.tieId, origin: view.origin })}
+            onOpenH2H={(a, b, dbl) => setView({ name: "h2h", a, b, dbl, fromMatchId: view.matchId, tieId: view.tieId, origin: view.origin })}
           />
         )}
 
@@ -434,13 +455,13 @@ export default function App() {
             initialB={view.b}
             initialDoubles={view.dbl}
             scope={view.scope}
-            onBack={view.fromMatchId ? () => setView({ name: "summary", matchId: view.fromMatchId, tieId: view.tieId }) : view.fromStart ? goToStart : view.fromOthers ? () => setView({ name: "others" }) : goToList}
+            onBack={view.fromMatchId ? () => setView({ name: "summary", matchId: view.fromMatchId, tieId: view.tieId, origin: view.origin }) : view.fromStart ? goToStart : view.fromOthers ? () => setView({ name: "others" }) : goToList}
           />
         )}
 
         {view.name === "tieList" && (
           <TeamTieListPage
-            onBack={goToList}
+            onBack={() => backTo(view.origin)}
             onNewTie={() => setView({ name: "tieSetup" })}
             onOpenTie={(tie) => setView({ name: "tieDetail", tieId: tie.id })}
           />

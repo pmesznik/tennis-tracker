@@ -1,3 +1,4 @@
+import { localDateStr } from "./time.js";
 // ─────────────────────────────────────────────────────────────────────────────
 // Tennis Tracker v0.1.0
 // storage.js — lokalne przechowywanie meczów (localStorage), ten sam
@@ -27,10 +28,14 @@ export function listMatches() {
   }
 }
 
+// Zwraca false, gdy zapis się nie udał (np. przepełniony localStorage).
 function saveAll(matches) {
   try {
     localStorage.setItem(KEY, JSON.stringify(Array.isArray(matches) ? matches : []));
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function getMatch(id) {
@@ -49,7 +54,7 @@ export function createMatch(data) {
     isDoubles: false,
     rules: null,
     trackingDepth: "basic",
-    date: now.slice(0, 10),
+    date: localDateStr(),
     surface: "Twarda",
     note: "",
     initialServer: "team1",
@@ -81,5 +86,5 @@ export function deleteMatch(id) {
 // Nadpisuje całą listę meczów naraz — używane przy imporcie kopii zapasowej
 // (backup.js), gdzie scalanie robi wywołujący i przekazuje już gotową listę.
 export function replaceAllMatches(matches) {
-  saveAll(matches);
+  return saveAll(matches);
 }

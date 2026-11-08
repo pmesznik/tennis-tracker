@@ -258,7 +258,7 @@ export function computeScore(rules, pointLog, initialServer = TEAM1, startedAt =
     pointServer: matchWinner ? null : (game?.server ?? server),
     matchWinner,
     game,
-    isMatchPoint: !matchWinner && computeIsMatchPoint(rules, { curPtsA, curPtsB, curSetGamesA, curSetGamesB, setsWonA, setsWonB, setsToWinMatch, inTb, inSuperTb, noAd: rules.noAd }),
+    isMatchPoint: !matchWinner && computeIsMatchPoint(rules, { curPtsA, curPtsB, curSetGamesA, curSetGamesB, setsWonA, setsWonB, setsToWinMatch, inTb, inSuperTb, noAd: rules.noAd, tbTarget: isFinalSet() && rules.finalSetTiebreakTo ? rules.finalSetTiebreakTo : rules.tiebreakTo }),
     // Znacznik początku aktualnie trwającego seta (do tykającego zegara w UI) —
     // to samo "koniec poprzedniego seta / start meczu", którego używa liczenie
     // durationMs powyżej, więc oba są ze sobą spójne.
@@ -343,7 +343,7 @@ function computeIsMatchPoint(rules, s) {
            (oneSetFromMatchB && s.curPtsB >= target - 1 && s.curPtsB - s.curPtsA >= 1);
   }
   if (s.inTb) {
-    const target = rules.tiebreakTo;
+    const target = s.tbTarget || rules.tiebreakTo;
     return (oneSetFromMatchA && s.curPtsA >= target - 1 && s.curPtsA - s.curPtsB >= 1) ||
            (oneSetFromMatchB && s.curPtsB >= target - 1 && s.curPtsB - s.curPtsA >= 1);
   }

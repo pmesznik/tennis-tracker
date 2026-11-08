@@ -184,8 +184,8 @@ export function ManualSetRow({ row, index, onChange, onRemove }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
   const inp = { ...styles.input, width: 56, textAlign: "center" };
-  const num = (key, ph) => (
-    <input style={inp} type="number" inputMode="numeric" min="0" value={row[key] ?? ""} placeholder={ph}
+  const num = (key, ph, label) => (
+    <input style={inp} type="number" inputMode="numeric" min="0" value={row[key] ?? ""} placeholder={ph} aria-label={label}
       onChange={(e) => onChange({ [key]: e.target.value })} />
   );
   const showTb = !row.superTb && (isTiebreakScore(row.a, row.b) || row.tbA || row.tbB);
@@ -193,17 +193,17 @@ export function ManualSetRow({ row, index, onChange, onRemove }) {
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 12, color: t.textMuted, width: 40 }}>{row.superTb ? "STB" : tr("common.setLabel", { n: index + 1 })}</span>
-        {num("a", row.superTb ? "10" : "6")}
+        {num("a", row.superTb ? "10" : "6", tr("common.setGamesLabel", { n: index + 1, side: 1 }))}
         <span>–</span>
-        {num("b", row.superTb ? "7" : "4")}
-        <button onClick={onRemove} aria-label={tr("common.delete")} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", minWidth: 40, minHeight: 40, display: "grid", placeItems: "center" }}><Icon name="close" size={18} /></button>
+        {num("b", row.superTb ? "7" : "4", tr("common.setGamesLabel", { n: index + 1, side: 2 }))}
+        <button onClick={onRemove} aria-label={tr("common.deleteSet", { n: index + 1 })} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", minWidth: 40, minHeight: 40, display: "grid", placeItems: "center" }}><Icon name="close" size={18} /></button>
       </div>
       {showTb && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
           <span style={{ fontSize: 12, color: t.textMuted, width: 40 }}>TB</span>
-          {num("tbA", "7")}
+          {num("tbA", "7", tr("common.setTbLabel", { n: index + 1, side: 1 }))}
           <span>–</span>
-          {num("tbB", "5")}
+          {num("tbB", "5", tr("common.setTbLabel", { n: index + 1, side: 2 }))}
         </div>
       )}
       {index >= 2 && (

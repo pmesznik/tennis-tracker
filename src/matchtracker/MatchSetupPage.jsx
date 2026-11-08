@@ -8,10 +8,11 @@ import * as storage from "./storage.js";
 import { PRESETS, DEFAULT_PRESET_KEY } from "./scoringEngine.js";
 import { buildPlayerIndex, suggestOpponents, canonicalName, getFavoritePlayers, toggleFavoritePlayer } from "./players.js";
 import { normName } from "./nameKey.js";
-import { manualRowsToSets } from "./matchEdit.js";
+import { manualRowsToSets, validateManualRows } from "./matchEdit.js";
 import { ManualSetRow } from "./TrackerModals.jsx";
 import { addMatchToTie } from "./teamTies.js";
 import { getProfile } from "./profile.js";
+import { localDateStr } from "./time.js";
 
 const DEPTHS = [
   { key: "basic", titleKey: "depth.basic.title", descKey: "depth.basic.desc" },
@@ -210,7 +211,7 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
     team1: { names: team1Names() },
     team2: { names: team2Names() },
     isDoubles,
-    date: new Date().toISOString().slice(0, 10),
+    date: localDateStr(),
     surface: surface || "Twarda",
     teamTieId: tieContext?.tieId || null,
   });
@@ -238,8 +239,9 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
   const updateManualSet = (i, patch) => setManualSets((s) => s.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
 
   const handleSaveManual = () => {
+    const err = validateManualRows(manualSets);
+    if (err) { alert(tr(err)); return; }
     const finalSets = manualRowsToSets(manualSets);
-    if (finalSets.length === 0) { alert(tr("setup.alertNeedOneSet")); return; }
     const match = linkToTie(storage.createMatch({
       ...baseData(),
       rules: null,

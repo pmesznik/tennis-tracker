@@ -33,7 +33,7 @@ function TieCard({ tie, onOpen, onDelete }) {
 }
 
 export default function TeamTieListPage({ onBack, onNewTie, onOpenTie }) {
-  const { styles } = useThemeCtx();
+  const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
   const [list, setList] = useState(() => ties.listTeamTies());
   const refresh = () => setList(ties.listTeamTies());

@@ -209,7 +209,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <MatchOptionsModal
           onEditNames={() => { setOptionsOpen(false); setEditingNames(true); }}
           onEndEarly={() => { setOptionsOpen(false); setEndingMatch(true); }}
-          onSwapServer={match.initialServer ? handleSwapServer : undefined}
+          onSwapServer={match.initialServer && !(match.isDoubles && match.pointLog.length > 0) ? handleSwapServer : undefined}
           onClose={() => setOptionsOpen(false)}
         />
       )}
