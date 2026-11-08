@@ -9,8 +9,8 @@ import { listTeamTies, replaceAllTeamTies } from "./teamTies.js";
 import { getProfile, saveProfile } from "./profile.js";
 import { localDateStr } from "./time.js";
 
-export function exportBackup() {
-  const data = {
+export function buildBackupData() {
+  return {
     app: "tennis-tracker",
     exportVersion: 1,
     exportedAt: new Date().toISOString(),
@@ -19,6 +19,10 @@ export function exportBackup() {
     teamTies: listTeamTies(),
     profile: getProfile(),
   };
+}
+
+export function exportBackup() {
+  const data = buildBackupData();
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);

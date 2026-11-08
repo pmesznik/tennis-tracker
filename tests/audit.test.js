@@ -62,3 +62,31 @@ describe("data lokalna", () => {
     expect(localDateStr(new Date(2026, 0, 5, 0, 30))).toBe("2026-01-05");
   });
 });
+
+import { isBackupDue, dataSignature } from "../src/cloudBackup.js";
+
+describe("kopia w chmurze: kiedy robić automatycznie", () => {
+  const DAY = 24 * 3600 * 1000;
+  const base = { uri: "content://x", freq: "daily", lastAt: 1000, lastSig: "1:a" };
+  it("bez folderu albo ręcznie: nigdy", () => {
+    expect(isBackupDue({ ...base, uri: "" }, 1e12, "2:b")).toBe(false);
+    expect(isBackupDue({ ...base, freq: "manual" }, 1e12, "2:b")).toBe(false);
+  });
+  it("brak zmian w danych: nie nadpisuj (poprzednia nie może stać się kopią najnowszej)", () => {
+    expect(isBackupDue(base, 1000 + 5 * DAY, "1:a")).toBe(false);
+    expect(isBackupDue({ ...base, freq: "match" }, 1000 + 5 * DAY, "1:a")).toBe(false);
+  });
+  it("po meczu: od razu gdy są zmiany", () => {
+    expect(isBackupDue({ ...base, freq: "match" }, 1001, "2:b")).toBe(true);
+  });
+  it("codziennie i co tydzień: dopiero po upływie okresu", () => {
+    expect(isBackupDue(base, 1000 + DAY - 1, "2:b")).toBe(false);
+    expect(isBackupDue(base, 1000 + DAY, "2:b")).toBe(true);
+    expect(isBackupDue({ ...base, freq: "weekly" }, 1000 + 6 * DAY, "2:b")).toBe(false);
+    expect(isBackupDue({ ...base, freq: "weekly" }, 1000 + 7 * DAY, "2:b")).toBe(true);
+  });
+  it("podpis danych zmienia się po dodaniu meczu", () => {
+    expect(dataSignature([{ updatedAt: "2026-01-01" }])).not.toBe(dataSignature([{ updatedAt: "2026-01-01" }, { updatedAt: "2026-01-01" }]));
+    expect(dataSignature([])).toBe("0:");
+  });
+});

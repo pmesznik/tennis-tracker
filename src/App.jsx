@@ -20,6 +20,7 @@ import { Icon } from "./matchtracker/ui.jsx";
 import { pushBack, popBack } from "./backStack.js";
 import ScoreBoard, { SCORE_STYLES, getStoredScoreStyle, setStoredScoreStyle } from "./matchtracker/scoreboard.jsx";
 import appIcon from "./assets/app-icon.svg";
+import { maybeAutoBackup } from "./cloudBackup.js";
 
 // Ekran przy pierwszym uruchomieniu — wybór języka jest jawny (nie zgadujemy
 // z ustawień systemu), żeby uniknąć niespodzianek. Zapamiętany w localStorage,
@@ -220,6 +221,15 @@ export default function App() {
     };
     return () => { delete window.appBack; };
   }, []);
+  // Automatyczna kopia w chmurze: przy starcie, po powrocie do aplikacji i po
+  // zakończeniu meczu. Robi się tylko wtedy, gdy dane zmieniły się od ostatniej kopii.
+  useEffect(() => {
+    maybeAutoBackup();
+    const onVis = () => { if (document.visibilityState === "visible") maybeAutoBackup(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+  useEffect(() => { if (view.name === "summary" || view.name === "start") maybeAutoBackup(); }, [view.name]);
   useEffect(() => {
     if (!showBackup) return undefined;
     return pushBack(() => setShowBackup(false));
