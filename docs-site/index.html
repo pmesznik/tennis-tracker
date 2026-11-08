@@ -581,6 +581,17 @@
       </p>
     </section>
 
+    <section id="pdf-meczu">
+      <div class="eyebrow">Statystyki</div>
+      <h2>PDF z podsumowaniem i wykresy punktów</h2>
+      <p>
+        W podsumowaniu zakończonego meczu przycisk „Pobierz PDF z podsumowaniem” składa jasny dokument A4 do druku: logo, wynik w setach, wykres punktów obu zawodników narastająco
+        (z kreskami końców setów), wykres przebiegu (różnica punktów), gemy po kolei w każdym secie i tabelę statystyk. PDF powstaje na urządzeniu (strony rysowane na canvasie,
+        <code>matchPdf.js</code>, zapis w <code>pdfWriter.js</code>) i jest udostępniany systemowym arkuszem. Te same wykresy (punkty w meczu, punkty w setach, gemy po kolei) są w statystykach po meczu.
+        Oś czasu liczy <code>timeline.js</code>. Mecz wpisany ręcznie nie ma punktów, więc PDF zawiera sam wynik w setach.
+      </p>
+    </section>
+
     <section id="przedwczesny-koniec">
       <div class="eyebrow">Przebieg meczu</div>
       <h2>Krecz, walkower, dyskwalifikacja i serwis w deblu</h2>

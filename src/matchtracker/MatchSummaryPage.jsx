@@ -1,5 +1,5 @@
 // Tennis Tracker v0.2.0 — podsumowanie meczu (wynik + statystyki).
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang, surfaceLabel } from "../i18n.js";
 import { TopBar, FullScreen, ScrollBody, Card, ShareIcon, Icon } from "./ui.jsx";
@@ -10,7 +10,11 @@ import { clearLiveScore } from "./liveSync.js";
 import { removeMatchFromTie } from "./teamTies.js";
 import { formatDuration, longestPoint, averagePointDurationMs } from "./time.js";
 import { computeStats, computeBreakPoints, flowSeries } from "./stats.js";
-import { StatRow, Donut, FlowChart, sideColors } from "./charts.jsx";
+import { StatRow, Donut, FlowChart, PointsChart, GamesStrip, SetPointsBars, sideColors } from "./charts.jsx";
+import { buildTimeline } from "./timeline.js";
+import { renderMatchPdf, shareMatchPdf } from "./matchPdf.js";
+import { earlyResult } from "./earlyEnd.js";
+import appIcon from "../assets/app-icon.svg";
 import { renderStatsPng, shareStatsPng } from "./statsImage.js";
 import { earlySetsRow } from "./earlyEnd.js";
 import { EditNamesModal, EditScoreModal } from "./TrackerModals.jsx";
@@ -32,6 +36,8 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
   const [editNames, setEditNames] = useState(false);
   const [editScore, setEditScore] = useState(false);
   const match = storage.getMatch(matchId);
+  // Oś czasu (punkty narastająco) liczona raz na zmianę zapisu punktów.
+  const timeline = useMemo(() => (match && match.rules && (match.pointLog || []).length >= 2 ? buildTimeline(match) : null), [match?.id, match?.pointLog?.length, match?.updatedAt]);
 
   useEffect(() => {
     onSurfaceChange?.(match?.surface || null);
@@ -74,6 +80,48 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
     for (const [key, labelKey] of STAT_ROWS) rows.push({ label: tr(labelKey), a: stats.team1[key], b: stats.team2[key], higherIsBetter: key !== "doubleFaults" && key !== "unforcedErrors" });
     const png = renderStatsPng({ title: tr("summary.title"), nameA: name1, nameB: name2, scoreA: score ? score.setsWonA : 0, scoreB: score ? score.setsWonB : 0, subtitle: setsRow.join("  "), rows }, t);
     shareStatsPng(png, "tennis-tracker-mecz.png", `${name1} – ${name2}: ${setsRow.join(" ")}`);
+  };
+
+  // PDF z podsumowaniem: wynik, wykresy punktów, gemy po kolei i statystyki.
+  // Mecz bez zapisu punktów (wynik wpisany ręcznie) dostaje sam wynik w setach.
+  const handlePdf = async () => {
+    const setsList = match.endReason ? earlyResult(match).sets
+      : match.finalSetsOverride ? match.finalSetsOverride
+      : (score ? score.sets : []);
+    const winnerSide = match.endReason ? (match.resultWinner === TEAM1 ? "a" : "b")
+      : score?.matchWinner ? (score.matchWinner === TEAM1 ? "a" : "b")
+      : null;
+    const serveOf = (team) => {
+      const own = match.pointLog.filter((p) => p.server === team);
+      return own.length ? `${Math.round((own.filter((p) => p.winner === team).length / own.length) * 100)}%` : null;
+    };
+    const rows = [];
+    if (match.pointLog.length) {
+      rows.push({ label: tr("summary.pointsShare"), a: ptsA, b: ptsB });
+      const sa = serveOf(TEAM1), sb = serveOf(TEAM2);
+      if (sa && sb) rows.push({ label: tr("pdf.servePoints"), a: sa, b: sb });
+    }
+    if (hasPointDetail && stats) {
+      if (bp) rows.push({ label: tr("summary.bpConverted"), a: `${bp.team1.conv}/${bp.team1.opp}`, b: `${bp.team2.conv}/${bp.team2.opp}` });
+      for (const [key, labelKey] of STAT_ROWS) rows.push({ label: tr(labelKey), a: stats.team1[key], b: stats.team2[key] });
+    }
+    const headline = [match.date, match.surface ? surfaceLabel(lang, match.surface) : null, hasTiming ? formatDuration(totalDurationMs) : null].filter(Boolean).join(" · ");
+    const pdf = await renderMatchPdf({
+      L: {
+        title: tr("summary.title"), vs: tr("common.vs"), setN: tr("summary.setN", { n: "{n}" }),
+        pointsTitle: tr("summary.pointsChartTitle"), pointsHint: tr("pdf.pointsHint"),
+        flowTitle: tr("summary.flowTitle"), flowHint: tr("pdf.flowHint"), gamesTitle: tr("pdf.gamesTitle"),
+        footer: tr("pdf.footer"), pageOf: tr("pdf.pageOf", { n: "{n}", m: "{m}" }),
+      },
+      nameA: name1, nameB: name2, shortA: name1.split(" ")[0], shortB: name2.split(" ")[0],
+      headline, sets: setsList, winner: winnerSide,
+      note: match.endReason ? tr("summary.endedEarly", { reason: tr(`tracker.reason.${match.endReason}`), winner: match.resultWinner === TEAM1 ? name1 : name2 }) : "",
+      timeline, rows,
+      extra: avgRally != null ? `${tr("summary.avgRallyLabel")} ${avgRally} ${tr("summary.hitsUnit")}` : "",
+      logoUrl: appIcon,
+    });
+    const slug = `${name1}-${name2}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
+    shareMatchPdf(pdf, `tennis-tracker-${slug}-${match.date}.pdf`, `${name1} – ${name2}: ${setsRow.join(" ")}`);
   };
 
   const handleSaveNames = (n1, n2) => {
@@ -190,6 +238,27 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
           </Card>
         )}
 
+        {timeline && (
+          <Card>
+            <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{tr("summary.pointsChartTitle")}</div>
+            <PointsChart timeline={timeline} nameA={name1} nameB={name2} setLabel={(n) => tr("summary.setN", { n })} />
+          </Card>
+        )}
+
+        {timeline && (
+          <Card>
+            <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{tr("pdf.setPointsTitle")}</div>
+            <SetPointsBars timeline={timeline} setLabel={(n) => tr("summary.setN", { n })} />
+          </Card>
+        )}
+
+        {timeline && timeline.games.length > 0 && (
+          <Card>
+            <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{tr("pdf.gamesTitle")}</div>
+            <GamesStrip timeline={timeline} setLabel={(n) => tr("summary.setN", { n })} />
+          </Card>
+        )}
+
         {hasPointDetail && (
           <Card>
             <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{tr("summary.flowTitle")}</div>
@@ -203,6 +272,11 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
           )}
           {match.endReason && match.rules && onContinue && (
             <button style={styles.secondaryBtn} onClick={handleResume}><Icon name="undo" size={19} />{tr("summary.resumeMatch")}</button>
+          )}
+          {match.status === "completed" && (
+            <button style={styles.secondaryBtn} onClick={handlePdf}>
+              <Icon name="file" size={19} />{tr("summary.downloadPdf")}
+            </button>
           )}
           <button
             style={styles.primaryBtn}
