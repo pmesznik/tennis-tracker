@@ -13,7 +13,7 @@ const retired = () => {
 describe("mecz zakończony przed czasem", () => {
   it("krecz: wynik do przerwania, zwycięzca z pola resultWinner", () => {
     const m = retired();
-    expect(earlySetsRow(m)).toEqual(["6-2", "3-1", "krecz"]);
+    expect(earlySetsRow(m)).toEqual(["6-2", "3-1", "Krecz"]);
     expect(deriveWinner(m)).toBe("team1");
   });
 
@@ -28,7 +28,7 @@ describe("mecz zakończony przed czasem", () => {
 
   it("walkower: zwycięstwo bez setów, gemów i punktów", () => {
     const m = match({ status: "completed", endReason: "walkover", resultWinner: "team2", pointLog: [] });
-    expect(earlySetsRow(m)).toEqual(["walkower"]);
+    expect(earlySetsRow(m)).toEqual(["Walkower"]);
     const h = computeH2H([m], "Ala", "Ola");
     expect(h.b.matchesWon).toBe(1);
     expect(h.a.gamesWon + h.b.gamesWon).toBe(0);

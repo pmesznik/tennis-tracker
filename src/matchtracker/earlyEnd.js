@@ -29,7 +29,7 @@ export function earlyResult(m) {
 }
 
 // Krótka etykieta do listy / udostępniania: "krecz", "walkower", "dyskw.".
-export const END_TAG = { retired: "krecz", walkover: "walkower", disqualified: "dyskw." };
+export const END_TAG = { retired: "Krecz", walkover: "Walkower", disqualified: "Dyskw." };
 
 // Wiersz setów (tablica napisów) dla zakończonego przedwcześnie meczu.
 export function earlySetsRow(m) {

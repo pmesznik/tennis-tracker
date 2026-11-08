@@ -23,14 +23,14 @@ describe("ręczny krecz i walkower", () => {
     const m = { ...base, endReason: "retired", resultWinner: "team1", finalSetsOverride: [{ a: 6, b: 4 }, { a: 2, b: 3, partial: true }] };
     expect(earlyResult(m).sets).toHaveLength(2);
     expect(earlyResult(m).winner).toBe("team1");
-    expect(earlySetsRow(m)).toEqual(["6-4", "2-3", "krecz"]);
+    expect(earlySetsRow(m)).toEqual(["6-4", "2-3", "Krecz"]);
     expect(deriveWinner(m)).toBe("team1");
   });
 
   it("walkower: bez setów, tylko w/o", () => {
     const m = { ...base, endReason: "walkover", resultWinner: "team2", finalSetsOverride: [] };
     expect(earlyResult(m).sets).toEqual([]);
-    expect(earlySetsRow(m)).toEqual(["walkower"]);
+    expect(earlySetsRow(m)).toEqual(["Walkower"]);
     expect(deriveWinner(m)).toBe("team2");
   });
 
