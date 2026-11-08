@@ -44,17 +44,35 @@ export function buildSwapServerPatch(match) {
 }
 
 // Wiersze edytora wyniku <-> sety w formacie finalSetsOverride.
-// tb = punkty PRZEGRANEGO w tie-breaku seta (7-6 i 5 daje 7-6(5)).
+// tbA / tbB = punkty tie-breaka seta po stronie A i B (np. 7-6 i 7:5).
+// Wystarczy wpisać jedną stronę: druga zostanie dopowiedziana (7-6 i 5 daje 7:5).
+// Stare pole tb = punkty przegranego nadal jest rozumiane.
+export const isTiebreakScore = (a, b) => {
+  const x = parseInt(a, 10), y = parseInt(b, 10);
+  return Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) === 1 && Math.min(x, y) >= 3;
+};
+
 export function manualRowsToSets(rows) {
   return rows
     .filter((r) => r.a !== "" && r.b !== "")
     .map((r) => {
       const a = parseInt(r.a, 10), b = parseInt(r.b, 10);
       if (r.superTb) return { a, b, isSuperTiebreak: true };
-      const tbLoser = parseInt(r.tb, 10);
-      if (r.tb !== "" && Number.isFinite(tbLoser) && tbLoser >= 0 && Math.abs(a - b) === 1 && Math.max(a, b) >= 6) {
-        const tbWin = Math.max(7, tbLoser + 2);
-        return { a, b, tiebreak: { a: a > b ? tbWin : tbLoser, b: a > b ? tbLoser : tbWin } };
+      if (Math.abs(a - b) === 1 && Math.max(a, b) >= 4) {
+        const num = (v) => { const n = parseInt(v, 10); return v !== "" && v != null && Number.isFinite(n) && n >= 0 ? n : null; };
+        const ta = num(r.tbA), tb = num(r.tbB), legacy = num(r.tb);
+        const aWon = a > b;
+        const win = (loser) => Math.max(7, loser + 2);
+        let tiebreak = null;
+        if (ta != null && tb != null) {
+          // zwycięzca seta wygrywa tie-break; przy odwróconych wartościach zamieniamy
+          tiebreak = (ta > tb) === aWon ? { a: ta, b: tb } : { a: tb, b: ta };
+        } else {
+          // jedna liczba (też stare pole tb) = punkty przegranego w tie-breaku
+          const loser = ta ?? tb ?? legacy;
+          if (loser != null) tiebreak = aWon ? { a: win(loser), b: loser } : { a: loser, b: win(loser) };
+        }
+        if (tiebreak) return { a, b, tiebreak };
       }
       return { a, b };
     });
@@ -63,7 +81,7 @@ export function manualRowsToSets(rows) {
 export function setsToManualRows(sets) {
   return (sets || []).map((s) => ({
     a: String(s.a), b: String(s.b),
-    tb: s.tiebreak ? String(Math.min(s.tiebreak.a, s.tiebreak.b)) : "",
+    tbA: s.tiebreak ? String(s.tiebreak.a) : "", tbB: s.tiebreak ? String(s.tiebreak.b) : "",
     superTb: !!s.isSuperTiebreak,
   }));
 }

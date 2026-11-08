@@ -9,6 +9,7 @@ import { PRESETS, DEFAULT_PRESET_KEY } from "./scoringEngine.js";
 import { buildPlayerIndex, suggestOpponents, canonicalName, getFavoritePlayers, toggleFavoritePlayer } from "./players.js";
 import { normName } from "./nameKey.js";
 import { manualRowsToSets } from "./matchEdit.js";
+import { ManualSetRow } from "./TrackerModals.jsx";
 import { addMatchToTie } from "./teamTies.js";
 import { getProfile } from "./profile.js";
 
@@ -189,7 +190,7 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
     onSurfaceChange?.(val || null);
   };
 
-  const [manualSets, setManualSets] = useState([{ a: "", b: "", tb: "", superTb: false }]);
+  const [manualSets, setManualSets] = useState([{ a: "", b: "", tbA: "", tbB: "", superTb: false }]);
   const [showDepthModal, setShowDepthModal] = useState(false);
 
   // Indeks graczy (wszystkie znane nazwiska + z kim kto grał) liczony raz z
@@ -232,7 +233,7 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
     onCreated(match);
   };
 
-  const addManualSet = () => setManualSets((s) => (s.length >= 5 ? s : [...s, { a: "", b: "", tb: "", superTb: false }]));
+  const addManualSet = () => setManualSets((s) => (s.length >= 5 ? s : [...s, { a: "", b: "", tbA: "", tbB: "", superTb: false }]));
   const removeManualSet = (i) => setManualSets((s) => s.filter((_, idx) => idx !== i));
   const updateManualSet = (i, patch) => setManualSets((s) => s.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
 
@@ -339,23 +340,7 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
           <>
             <div style={{ fontSize: 12, color: t.textSub, lineHeight: 1.45, marginBottom: 14 }}>{tr("setup.manualHint")}</div>
             {manualSets.map((row, i) => (
-              <div key={i} style={{ marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 12, color: t.textMuted, width: 40 }}>{row.superTb ? "STB" : tr("common.setLabel", { n: i + 1 })}</span>
-                  <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" inputMode="numeric" value={row.a} onChange={(e) => updateManualSet(i, { a: e.target.value })} placeholder={row.superTb ? "10" : "6"} />
-                  <span>–</span>
-                  <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" inputMode="numeric" value={row.b} onChange={(e) => updateManualSet(i, { b: e.target.value })} placeholder={row.superTb ? "7" : "4"} />
-                  {!row.superTb && (
-                    <input style={{ ...styles.input, width: 56, textAlign: "center" }} type="number" inputMode="numeric" value={row.tb} onChange={(e) => updateManualSet(i, { tb: e.target.value })} placeholder={tr("setup.tbPlaceholder")} title={tr("setup.tbTitle")} />
-                  )}
-                  <button onClick={() => removeManualSet(i)} aria-label={tr("common.delete")} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", minWidth: 40, minHeight: 40, display: "grid", placeItems: "center" }}><Icon name="close" size={18} /></button>
-                </div>
-                {i >= 2 && (
-                  <div style={{ marginTop: 8, marginLeft: 48 }}>
-                    <Chip label={tr("setup.superTbRow")} active={row.superTb} onClick={() => updateManualSet(i, { superTb: !row.superTb, tb: "" })} />
-                  </div>
-                )}
-              </div>
+              <ManualSetRow key={i} row={row} index={i} onChange={(patch) => updateManualSet(i, patch)} onRemove={() => removeManualSet(i)} />
             ))}
             {manualSets.length < 5 && <button style={styles.secondaryBtn} onClick={addManualSet}><Icon name="add" size={18} />{tr("setup.addSet")}</button>}
           </>

@@ -26,12 +26,16 @@ describe("poprawki meczu", () => {
 
   it("wiersze wyniku: tie-break 10:8 i super tie-break", () => {
     const sets = manualRowsToSets([
-      { a: "7", b: "6", tb: "8", superTb: false },
+      { a: "7", b: "6", tbA: "", tbB: "8", superTb: false },
       { a: "4", b: "6", tb: "", superTb: false },
       { a: "10", b: "7", tb: "", superTb: true },
     ]);
     expect(sets[0]).toEqual({ a: 7, b: 6, tiebreak: { a: 10, b: 8 } });
     expect(sets[2]).toEqual({ a: 10, b: 7, isSuperTiebreak: true });
-    expect(setsToManualRows(sets)[0]).toMatchObject({ a: "7", b: "6", tb: "8" });
+    expect(setsToManualRows(sets)[0]).toMatchObject({ a: "7", b: "6", tbA: "10", tbB: "8" });
+    // dwie strony wpisane wprost, także przy przegranym secie, i stare pole tb
+    expect(manualRowsToSets([{ a: "6", b: "7", tbA: "5", tbB: "7", superTb: false }])[0]).toEqual({ a: 6, b: 7, tiebreak: { a: 5, b: 7 } });
+    expect(manualRowsToSets([{ a: "6", b: "7", tbA: "7", tbB: "5", superTb: false }])[0].tiebreak).toEqual({ a: 5, b: 7 });
+    expect(manualRowsToSets([{ a: "7", b: "6", tb: "3", superTb: false }])[0].tiebreak).toEqual({ a: 7, b: 3 });
   });
 });

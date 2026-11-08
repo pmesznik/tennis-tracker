@@ -5,6 +5,7 @@ import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
 import { pushBack } from "../backStack.js";
 import { Icon, Chip } from "./ui.jsx";
+import { isTiebreakScore } from "./matchEdit.js";
 
 function Sheet({ title, onClose, children }) {
   const { t } = useThemeCtx();
@@ -176,36 +177,59 @@ export function EndMatchModal({ labels, onConfirm, onClose }) {
   );
 }
 
+// Wiersz seta w edytorze wyniku: gemy A–B, a przy 7-6 (itp.) drugi rząd z
+// polami tie-breaka tak samo jak dla seta. Przy trzecim secie można wybrać
+// super tie-break (wtedy pola to punkty, np. 10–7).
+export function ManualSetRow({ row, index, onChange, onRemove }) {
+  const { t, styles } = useThemeCtx();
+  const { t: tr } = useLang();
+  const inp = { ...styles.input, width: 56, textAlign: "center" };
+  const num = (key, ph) => (
+    <input style={inp} type="number" inputMode="numeric" min="0" value={row[key] ?? ""} placeholder={ph}
+      onChange={(e) => onChange({ [key]: e.target.value })} />
+  );
+  const showTb = !row.superTb && (isTiebreakScore(row.a, row.b) || row.tbA || row.tbB);
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 12, color: t.textMuted, width: 40 }}>{row.superTb ? "STB" : tr("common.setLabel", { n: index + 1 })}</span>
+        {num("a", row.superTb ? "10" : "6")}
+        <span>–</span>
+        {num("b", row.superTb ? "7" : "4")}
+        <button onClick={onRemove} aria-label={tr("common.delete")} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", minWidth: 40, minHeight: 40, display: "grid", placeItems: "center" }}><Icon name="close" size={18} /></button>
+      </div>
+      {showTb && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+          <span style={{ fontSize: 12, color: t.textMuted, width: 40 }}>TB</span>
+          {num("tbA", "7")}
+          <span>–</span>
+          {num("tbB", "5")}
+        </div>
+      )}
+      {index >= 2 && (
+        <div style={{ marginTop: 8, marginLeft: 48 }}>
+          <Chip label={tr("setup.superTbRow")} active={row.superTb} onClick={() => onChange({ superTb: !row.superTb, tbA: "", tbB: "" })} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Edytor ręcznie wpisanego wyniku (mecz z "Zapisz wynik"): sety, tie-break
 // (punkty przegranego) i super tie-break przy trzecim secie.
 export function EditScoreModal({ rows: initialRows, onSave, onClose }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
-  const [rows, setRows] = useState(initialRows.length ? initialRows : [{ a: "", b: "", tb: "", superTb: false }]);
+  const [rows, setRows] = useState(initialRows.length ? initialRows : [{ a: "", b: "", tbA: "", tbB: "", superTb: false }]);
   const upd = (i, patch) => setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
-  const inp = { ...styles.input, width: 56, textAlign: "center" };
   return (
     <Sheet title={tr("summary.editScore")} onClose={onClose}>
       <div style={{ fontSize: 12, color: t.textSub, lineHeight: 1.45, marginBottom: 14 }}>{tr("setup.manualHint")}</div>
       {rows.map((row, i) => (
-        <div key={i} style={{ marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12, color: t.textMuted, width: 40 }}>{row.superTb ? "STB" : tr("common.setLabel", { n: i + 1 })}</span>
-            <input style={inp} type="number" inputMode="numeric" value={row.a} onChange={(e) => upd(i, { a: e.target.value })} />
-            <span>–</span>
-            <input style={inp} type="number" inputMode="numeric" value={row.b} onChange={(e) => upd(i, { b: e.target.value })} />
-            {!row.superTb && <input style={inp} type="number" inputMode="numeric" value={row.tb} onChange={(e) => upd(i, { tb: e.target.value })} placeholder={tr("setup.tbPlaceholder")} title={tr("setup.tbTitle")} />}
-            <button onClick={() => setRows((rs) => rs.filter((_, idx) => idx !== i))} aria-label={tr("common.delete")} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", minWidth: 40, minHeight: 40, display: "grid", placeItems: "center" }}><Icon name="close" size={18} /></button>
-          </div>
-          {i >= 2 && (
-            <div style={{ marginTop: 8, marginLeft: 48 }}>
-              <Chip label={tr("setup.superTbRow")} active={row.superTb} onClick={() => upd(i, { superTb: !row.superTb, tb: "" })} />
-            </div>
-          )}
-        </div>
+        <ManualSetRow key={i} row={row} index={i} onChange={(patch) => upd(i, patch)} onRemove={() => setRows((rs) => rs.filter((_, idx) => idx !== i))} />
       ))}
       {rows.length < 5 && (
-        <button style={{ ...styles.secondaryBtn, marginBottom: 12 }} onClick={() => setRows((rs) => [...rs, { a: "", b: "", tb: "", superTb: false }])}>
+        <button style={{ ...styles.secondaryBtn, marginBottom: 12 }} onClick={() => setRows((rs) => [...rs, { a: "", b: "", tbA: "", tbB: "", superTb: false }])}>
           <Icon name="add" size={18} />{tr("setup.addSet")}
         </button>
       )}
