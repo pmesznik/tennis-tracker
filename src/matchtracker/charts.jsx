@@ -1,5 +1,6 @@
 // Tennis Tracker — proste wykresy SVG/CSS do statystyk (bez bibliotek).
 // Strona A zawsze w kolorze akcentu, strona B w drugim kolorze motywu.
+import { useMemo, useState } from "react";
 import { useThemeCtx } from "../theme.js";
 import { flowSeries } from "./stats.js";
 import { sampleIndexes } from "./timeline.js";
@@ -174,6 +175,84 @@ export function SetPointsBars({ timeline, setLabel = (n) => `Set ${n}` }) {
         );
       })}
     </div>
+  );
+}
+
+// Przebieg jednego gema: górny poziom to punkty strony A, dolny strony B.
+// Wygrany punkt przenosi linię na stronę zawodnika; płaski odcinek to seria punktów.
+export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, hint }) {
+  const { t } = useThemeCtx();
+  const c = sideColors(t);
+  const longest = useMemo(() => games.reduce((bi, g, i) => (g.points.length > games[bi].points.length ? i : bi), 0), [games]);
+  const [sel, setSel] = useState(longest);
+  if (!games.length) return null;
+  const g = games[Math.min(sel, games.length - 1)];
+  const W = 380, H = 230, pl = 22, pr = 22, yA = 70, yB = 170, yMid = 120;
+  const n = g.points.length;
+  const step = n > 1 ? Math.min(46, (W - pl - pr) / (n - 1)) : 0;
+  const x = (i) => pl + 8 + i * step;
+  const y = (p) => (p.a ? yA : yB);
+  return (
+    <div style={{ padding: "0 8px 10px" }}>
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "2px 6px 8px" }}>
+        {games.map((gm, i) => (
+          <button key={i} onClick={() => setSel(i)} aria-pressed={i === sel} style={{
+            flex: "0 0 auto", minHeight: 36, padding: "0 12px", borderRadius: 999, cursor: "pointer", fontFamily: "inherit", fontSize: 13,
+            border: `1px solid ${i === sel ? t.accent : t.glassLine}`, background: i === sel ? t.tonalStrong : "transparent",
+            color: i === sel ? t.text : t.textSub, fontWeight: i === sel ? 700 : 500,
+          }}>{chipLabel(gm)}{i === sel ? ` · ${ptsLabel(gm.points.length)}` : ""}</button>
+        ))}
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`${chipLabel(g)}: ${g.points.map((p) => (p.a ? nameA : nameB) + " " + p.label).join(", ")}`}>
+        <text x="6" y="16" fontSize="12" fill={t.textSub}>{nameA}</text>
+        <text x="6" y={H - 8} fontSize="12" fill={t.textSub}>{nameB}</text>
+        <line x1={pl - 6} x2={W - pr + 6} y1={yMid} y2={yMid} stroke={t.border} strokeWidth="1.2" />
+        {g.points.slice(1).map((p, i) => (
+          <line key={i} x1={x(i)} y1={y(g.points[i])} x2={x(i + 1)} y2={y(p)} stroke={p.a ? c.a : c.b} strokeWidth="3.5" strokeLinecap="round" />
+        ))}
+        {g.points.map((p, i) => (
+          <g key={i}>
+            <circle cx={x(i)} cy={y(p)} r={i === n - 1 ? 6.5 : 4.5} fill={i === n - 1 ? (p.a ? c.a : c.b) : t.bg} stroke={p.a ? c.a : c.b} strokeWidth="2" />
+            <text x={x(i)} y={p.a ? yA - 14 : yB + 24} textAnchor="middle" fontSize={n > 12 ? 11 : 13} fontWeight={i === n - 1 ? 700 : 400} fill={t.text}>{p.label}</text>
+            {(n <= 14 || i % 2 === 0) && <text x={x(i)} y={yMid + 14} textAnchor="middle" fontSize="11" fill={t.textMuted}>{i + 1}</text>}
+          </g>
+        ))}
+      </svg>
+      <div style={{ fontSize: 12, color: t.textSub, padding: "0 6px" }}>{hint}</div>
+    </div>
+  );
+}
+
+// Mecze w kolejnych miesiącach: słupek wygranych (kolor strony A) i przegranych (szary).
+export function MonthBars({ months, lang = "pl" }) {
+  const { t } = useThemeCtx();
+  const c = sideColors(t);
+  if (!months || !months.length) return null;
+  const W = 300, H = 120, pl = 10, pr = 10, pt = 8, pb = 20;
+  const max = Math.max(2, ...months.map((m) => m.w + m.l));
+  const n = months.length;
+  const bw = Math.min(28, (W - pl - pr) / n - 6);
+  const step = n > 1 ? (W - pl - pr - bw) / (n - 1) : 0;
+  const unit = (H - pt - pb) / max;
+  const label = (key) => {
+    const [y, m] = key.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString(lang === "en" ? "en" : "pl", { month: "short" }).replace(".", "");
+  };
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={months.map((m) => `${label(m.key)}: ${m.w}-${m.l}`).join(", ")} style={{ padding: "0 10px", boxSizing: "border-box" }}>
+      <line x1={pl} x2={W - pr} y1={H - pb} y2={H - pb} stroke={t.border} strokeWidth="1" />
+      {months.map((m, i) => {
+        const x = n > 1 ? pl + i * step : (W - bw) / 2;
+        const hw = m.w * unit, hl = m.l * unit;
+        return (
+          <g key={m.key}>
+            {m.w > 0 && <rect x={x} y={H - pb - hw} width={bw} height={hw} rx="3" fill={c.a} />}
+            {m.l > 0 && <rect x={x} y={H - pb - hw - hl - (m.w ? 2 : 0)} width={bw} height={hl} rx="3" fill={c.b} />}
+            <text x={x + bw / 2} y={H - 5} textAnchor="middle" fontSize="11" fill={t.textMuted}>{label(m.key)}</text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 

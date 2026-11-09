@@ -143,7 +143,7 @@ export async function renderMatchPages(d) {
     });
     y += 18;
   }
-  if (d.extra) { y += 30; text(d.extra, M, y, font(400, 28), C.sub); }
+  [].concat(d.extra || []).forEach((line) => { need(50); y += 40; text(line, M, y, font(400, 28), C.sub, "left", PW - 2 * M); });
 
   // Stopki
   pages.forEach((p, i) => {

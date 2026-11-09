@@ -10,8 +10,10 @@ import { clearLiveScore } from "./liveSync.js";
 import { removeMatchFromTie } from "./teamTies.js";
 import { formatDuration, longestPoint, averagePointDurationMs } from "./time.js";
 import { computeStats, computeBreakPoints, flowSeries } from "./stats.js";
-import { StatRow, Donut, FlowChart, PointsChart, GamesStrip, SetPointsBars, sideColors } from "./charts.jsx";
+import { StatRow, Donut, FlowChart, PointsChart, GamesStrip, SetPointsBars, GameFlow, sideColors } from "./charts.jsx";
 import { buildTimeline } from "./timeline.js";
+import { computeMomentum } from "./momentum.js";
+import { buildGames } from "./gameFlow.js";
 import { renderMatchPdf, shareMatchPdf } from "./matchPdf.js";
 import { earlyResult } from "./earlyEnd.js";
 import appIcon from "../assets/app-icon.svg";
@@ -60,6 +62,8 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
     setsRow = match.status === "completed" ? score.sets.map((s) => formatSetsString([s])) : buildSetRow(match.rules, score);
   }
 
+  const gameList = useMemo(() => (timeline ? buildGames(match, timeline) : []), [timeline]);
+  const momentum = useMemo(() => (timeline ? computeMomentum(match, timeline) : null), [timeline]);
   const hasPointDetail = match.trackingDepth !== "basic" && match.pointLog.length > 0;
   const { stats, avgRally } = hasPointDetail ? computeStats(match.pointLog) : { stats: null, avgRally: null };
   const bp = hasPointDetail ? computeBreakPoints(match.rules, match.pointLog, match.initialServer || TEAM1) : null;
@@ -105,6 +109,17 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
       if (bp) rows.push({ label: tr("summary.bpConverted"), a: `${bp.team1.conv}/${bp.team1.opp}`, b: `${bp.team2.conv}/${bp.team2.opp}` });
       for (const [key, labelKey] of STAT_ROWS) rows.push({ label: tr(labelKey), a: stats.team1[key], b: stats.team2[key] });
     }
+    if (momentum) {
+      rows.push({ label: tr("summary.pointStreak"), a: momentum.pointStreak.a, b: momentum.pointStreak.b });
+      if (momentum.gameStreak) rows.push({ label: tr("summary.gameStreak"), a: momentum.gameStreak.a, b: momentum.gameStreak.b });
+      if (hasPointDetail && bp && (bp.team1.opp > 0 || bp.team2.opp > 0)) {
+        rows.push({ label: tr("summary.bpSavedRow"), a: `${bp.team2.opp - bp.team2.conv}/${bp.team2.opp}`, b: `${bp.team1.opp - bp.team1.conv}/${bp.team1.opp}` });
+      }
+    }
+    const extraLines = [
+      avgRally != null ? `${tr("summary.avgRallyLabel")} ${avgRally} ${tr("summary.hitsUnit")}` : null,
+      momentum?.longestGame ? tr("summary.longestGame", { n: momentum.longestGame.points, set: momentum.longestGame.set, game: momentum.longestGame.game, name: momentum.longestGame.winner === TEAM1 ? name1 : name2 }) : null,
+    ].filter(Boolean);
     const headline = [match.date, match.surface ? surfaceLabel(lang, match.surface) : null, hasTiming ? formatDuration(totalDurationMs) : null].filter(Boolean).join(" · ");
     const pdf = await renderMatchPdf({
       L: {
@@ -117,7 +132,7 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
       headline, sets: setsList, winner: winnerSide,
       note: match.endReason ? tr("summary.endedEarly", { reason: tr(`tracker.reason.${match.endReason}`), winner: match.resultWinner === TEAM1 ? name1 : name2 }) : "",
       timeline, rows,
-      extra: avgRally != null ? `${tr("summary.avgRallyLabel")} ${avgRally} ${tr("summary.hitsUnit")}` : "",
+      extra: extraLines,
       logoUrl: appIcon,
     });
     const slug = `${name1}-${name2}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
@@ -256,6 +271,32 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
           <Card>
             <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{tr("pdf.gamesTitle")}</div>
             <GamesStrip timeline={timeline} setLabel={(n) => tr("summary.setN", { n })} />
+          </Card>
+        )}
+
+        {gameList.length > 0 && (
+          <Card>
+            <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{tr("summary.gameFlowTitle")}</div>
+            <GameFlow games={gameList} nameA={name1} nameB={name2}
+              chipLabel={(g) => tr("summary.gameChip", { set: g.set, game: g.game })}
+              ptsLabel={(n) => tr("summary.gameFlowPts", { n })} hint={tr("summary.gameFlowHint")} />
+          </Card>
+        )}
+
+        {momentum && (
+          <Card>
+            <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{tr("summary.momentsTitle")}</div>
+            <StatRow label={tr("summary.pointStreak")} a={momentum.pointStreak.a} b={momentum.pointStreak.b} />
+            {momentum.gameStreak && <StatRow label={tr("summary.gameStreak")} a={momentum.gameStreak.a} b={momentum.gameStreak.b} />}
+            {bp && (bp.team1.opp > 0 || bp.team2.opp > 0) && (
+              <StatRow label={tr("summary.bpSavedRow")} a={bp.team2.opp ? (bp.team2.opp - bp.team2.conv) / bp.team2.opp : 0} b={bp.team1.opp ? (bp.team1.opp - bp.team1.conv) / bp.team1.opp : 0}
+                aText={`${bp.team2.opp - bp.team2.conv}/${bp.team2.opp}`} bText={`${bp.team1.opp - bp.team1.conv}/${bp.team1.opp}`} />
+            )}
+            {momentum.longestGame && (
+              <div style={{ padding: "10px 14px", borderTop: `1px solid ${t.border}`, fontSize: 13, color: t.textSub, lineHeight: 1.5 }}>
+                {tr("summary.longestGame", { n: momentum.longestGame.points, set: momentum.longestGame.set, game: momentum.longestGame.game, name: momentum.longestGame.winner === TEAM1 ? name1 : name2 })}
+              </div>
+            )}
           </Card>
         )}
 

@@ -12,7 +12,8 @@ import {
 } from "./h2h.js";
 import { shareMatch, buildH2HShareUrl } from "./shareLink.js";
 import { renderStatsPng, shareStatsPng } from "./statsImage.js";
-import { StatRow, Donut, FormStrip, MiniBar, sideColors } from "./charts.jsx";
+import { StatRow, Donut, FormStrip, MiniBar, MonthBars, sideColors } from "./charts.jsx";
+import { seasonSummary, yearsOf, filterByYear } from "./seasonStats.js";
 
 const pctText = (w, tot) => { const p = pct(w, tot); return p == null ? "–" : `${p}% (${w}/${tot})`; };
 const rate = (w, tot) => (tot ? w / tot : 0);
@@ -20,6 +21,45 @@ const rate = (w, tot) => (tot ? w / tot : 0);
 function Title({ children }) {
   const { t } = useThemeCtx();
   return <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{children}</div>;
+}
+
+// Karta sezonu: bilans, odsetek zwycięstw, najdłuższa seria, mecze w miesiącach,
+// najlepsza nawierzchnia i najczęstszy rywal (tylko dla jednego zawodnika).
+function SeasonCard({ h, season, playerMode }) {
+  const { t } = useThemeCtx();
+  const { lang, t: tr } = useLang();
+  const c = sideColors(t);
+  const s = useMemo(() => seasonSummary(h.list), [h.list]);
+  if (s.played < 2) return null;
+  const big = { fontSize: 24, fontWeight: 700, fontFamily: t.fontScore };
+  const cap = { fontSize: 11, color: t.textSub };
+  const row = { display: "flex", justifyContent: "space-between", gap: 8, padding: "9px 14px", borderTop: `1px solid ${t.border}`, fontSize: 13 };
+  return (
+    <Card>
+      <Title>{season === "all" ? tr("season.titleAll") : tr("season.title", { year: season })}</Title>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "4px 14px 12px", textAlign: "center" }}>
+        <div><div style={{ ...big, color: c.a }}>{s.won} : {s.lost}</div><div style={cap}>{tr("season.matches")}</div></div>
+        <div><div style={big}>{s.winPct}%</div><div style={cap}>{tr("season.winPct")}</div></div>
+        <div><div style={big}>{s.bestStreak}</div><div style={cap}>{tr("season.bestStreak")}</div></div>
+      </div>
+      {s.byMonth.length > 0 && (
+        <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 6 }}>
+          <div style={{ padding: "2px 14px 0", fontSize: 12, color: t.textSub }}>{tr("season.byMonth")}</div>
+          <MonthBars months={s.byMonth} lang={lang} />
+          <div style={{ display: "flex", gap: 14, fontSize: 12, color: t.textSub, padding: "0 14px 10px" }}>
+            <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: c.a, marginRight: 5 }} />{tr("season.won")}</span>
+            <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: c.b, marginRight: 5 }} />{tr("season.lost")}</span>
+          </div>
+        </div>
+      )}
+      {s.bestSurface && (
+        <div style={row}><span style={{ color: t.textSub }}>{tr("season.bestSurface")}</span><strong>{surfaceLabel(lang, s.bestSurface.surface)}, {s.bestSurface.w} / {s.bestSurface.total}</strong></div>
+      )}
+      {playerMode && s.topOpponent && s.topOpponent.n > 1 && (
+        <div style={row}><span style={{ color: t.textSub }}>{tr("season.topOpponent")}</span><strong>{s.topOpponent.name} ({s.topOpponent.n})</strong></div>
+      )}
+    </Card>
+  );
 }
 
 // Wiersze porównania (te same na ekranie i na obrazie do wysłania).
@@ -51,7 +91,7 @@ export function h2hRows(h, tr) {
 
 // Wspólny blok statystyk: `h` z computeH2H albo computePlayerStats, `nameA` i
 // `nameB` to podpisy stron.
-function StatsBlock({ h, nameA, nameB, playerMode }) {
+function StatsBlock({ h, nameA, nameB, playerMode, season }) {
   const { t } = useThemeCtx();
   const { lang, t: tr } = useLang();
   const c = sideColors(t);
@@ -92,6 +132,8 @@ function StatsBlock({ h, nameA, nameB, playerMode }) {
           {detailed ? tr("h2h.pointsNote", { n: h.detailedMatches, total: h.total }) : tr("h2h.noPoints")}
         </div>
       </Card>
+
+      <SeasonCard h={h} season={season} playerMode={playerMode} />
 
       {form.length > 1 && (
         <Card>
@@ -142,12 +184,16 @@ export default function H2HPage({ initialA, initialB, initialDoubles, scope, onB
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
   // scope: "mine" = tylko mecze głównego zawodnika, "others" = mecze, w których nie gra.
-  const matches = useMemo(() => {
+  const scoped = useMemo(() => {
     const all = storage.listMatches();
     const p = getProfile();
     if (!scope || !p.name) return all;
     return all.filter((m) => isOthersMatch(p, m) === (scope === "others"));
   }, [scope]);
+  // Sezon (rok): domyślnie bieżący, jeśli są w nim mecze; „Cały czas” pokazuje wszystko.
+  const years = useMemo(() => yearsOf(scoped), [scoped]);
+  const [season, setSeason] = useState(() => (yearsOf(scoped).includes(String(new Date().getFullYear())) ? String(new Date().getFullYear()) : "all"));
+  const matches = useMemo(() => filterByYear(scoped, season), [scoped, season]);
   const [kind, setKind] = useState(() => {
     if (initialDoubles) return "doubles";
     // „Moje statystyki” dla kogoś, kto gra tylko debla, od razu pokazują debla.
@@ -180,7 +226,7 @@ export default function H2HPage({ initialA, initialB, initialDoubles, scope, onB
   const pair = useMemo(() => (mode === "pair" && effectiveA && effectiveB ? computeH2H(matches, effectiveA, effectiveB, kind) : null), [mode, matches, effectiveA, effectiveB, kind]);
   const player = useMemo(() => (mode === "player" && effectiveA ? computePlayerStats(matches, effectiveA, kind) : null), [mode, matches, effectiveA, kind]);
   const h = pair || player;
-  const hasAny = listH2HPlayers(matches, "singles").length + listH2HPlayers(matches, "doubles").length > 0;
+  const hasAny = listH2HPlayers(scoped, "singles").length + listH2HPlayers(scoped, "doubles").length > 0;
 
   const select = { ...styles.input, appearance: "auto", marginBottom: 12, cursor: "pointer" };
   const labels = { matches: tr("h2h.matches"), sets: tr("h2h.sets"), games: tr("h2h.games"), points: tr("h2h.points") };
@@ -209,6 +255,17 @@ export default function H2HPage({ initialA, initialB, initialDoubles, scope, onB
           <div style={styles.centered}><span style={{ maxWidth: 280 }}>{tr("h2h.empty")}</span></div>
         ) : (
           <>
+            {years.length > 1 && (
+              <div role="group" aria-label={tr("season.pick")} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                {[...years, "all"].map((y) => (
+                  <button key={y} onClick={() => { setSeason(y); setNameA(""); setNameB(""); }} aria-pressed={season === y} style={{
+                    minHeight: 40, padding: "0 16px", borderRadius: 999, cursor: "pointer", fontFamily: "inherit", fontSize: 14,
+                    border: `1px solid ${season === y ? t.accent : t.glassLine}`, background: season === y ? t.tonalStrong : "transparent",
+                    color: season === y ? t.text : t.textSub, fontWeight: season === y ? 700 : 500,
+                  }}>{y === "all" ? tr("season.all") : y}</button>
+                ))}
+              </div>
+            )}
             <div style={{ display: "flex", gap: 4, padding: 3, background: t.tonal, borderRadius: 999, marginBottom: 10 }}>
               <TabBtn t={t} active={kind === "singles"} onClick={() => switchKind("singles")}>{tr("h2h.kindSingles")}</TabBtn>
               <TabBtn t={t} active={kind === "doubles"} onClick={() => switchKind("doubles")}>{tr("h2h.kindDoubles")}</TabBtn>
@@ -237,7 +294,7 @@ export default function H2HPage({ initialA, initialB, initialDoubles, scope, onB
 
                 {h && h.total > 0 && (
                   <>
-                    <StatsBlock playerMode={!pair} h={h} nameA={pair ? h.nameA : h.name} nameB={pair ? h.nameB : tr("h2h.allOpponents")} />
+                    <StatsBlock season={season} playerMode={!pair} h={h} nameA={pair ? h.nameA : h.name} nameB={pair ? h.nameB : tr("h2h.allOpponents")} />
                     {player && player.opponents.length > 0 && (
                       <Card>
                         <Title>{tr("h2h.opponentsTitle")}</Title>
