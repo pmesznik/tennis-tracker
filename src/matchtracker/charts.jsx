@@ -183,7 +183,10 @@ export function SetPointsBars({ timeline, setLabel = (n) => `Set ${n}` }) {
 // Wygrany punkt przenosi linię na stronę zawodnika; płaski odcinek to seria punktów.
 export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, setLabel = (n) => `Set ${n}`, prevLabel = "<", nextLabel = ">", hint }) {
   const { t } = useThemeCtx();
-  const c = sideColors(t);
+  // Dwa wyraźne kolory: A w kolorze motywu, B w barwie kontrastowej (niebieski albo pomarańczowy).
+  const hex = String(t.accent || "").replace("#", "");
+  const rgb = hex.length === 6 ? [0, 2, 4].map((k) => parseInt(hex.slice(k, k + 2), 16)) : [255, 120, 60];
+  const c = { a: t.accent, b: rgb[2] > rgb[0] ? "#FF9A3D" : "#4DA3FF" };
   const longest = useMemo(() => games.reduce((bi, g, i) => (g.points.length > games[bi].points.length ? i : bi), 0), [games]);
   const [sel, setSel] = useState(longest);
   const sets = useMemo(() => {
@@ -230,8 +233,8 @@ export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, setLabel = 
         </div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`${chipLabel(g)}: ${g.points.map((p) => (p.a ? nameA : nameB) + " " + p.label).join(", ")}`}>
-        <text x="6" y="16" fontSize="12" fill={t.textSub}>{nameA}</text>
-        <text x="6" y={H - 8} fontSize="12" fill={t.textSub}>{nameB}</text>
+        <text x="6" y="16" fontSize="12" fontWeight="700" fill={c.a}>{nameA}</text>
+        <text x="6" y={H - 8} fontSize="12" fontWeight="700" fill={c.b}>{nameB}</text>
         <line x1={pl - 6} x2={W - pr + 6} y1={yMid} y2={yMid} stroke={t.border} strokeWidth="1.2" />
         {g.points.slice(1).map((p, i) => (
           <line key={i} x1={x(i)} y1={y(g.points[i])} x2={x(i + 1)} y2={y(p)} stroke={p.a ? c.a : c.b} strokeWidth="3.5" strokeLinecap="round" />
