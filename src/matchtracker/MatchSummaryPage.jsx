@@ -279,7 +279,7 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
             <div style={{ padding: "10px 14px", fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: t.textSub }}>{tr("summary.gameFlowTitle")}</div>
             <GameFlow games={gameList} nameA={name1} nameB={name2}
               chipLabel={(g) => tr("summary.gameChip", { set: g.set, game: g.game })}
-              ptsLabel={(n) => tr("summary.gameFlowPts", { n })} setLabel={(n) => tr("summary.setN", { n })} hint={tr("summary.gameFlowHint")} />
+              ptsLabel={(n) => tr("summary.gameFlowPts", { n })} prevLabel={tr("summary.prevGame")} nextLabel={tr("summary.nextGame")} hint={tr("summary.gameFlowHint")} />
           </Card>
         )}
 

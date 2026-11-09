@@ -181,7 +181,7 @@ export function SetPointsBars({ timeline, setLabel = (n) => `Set ${n}` }) {
 
 // Przebieg jednego gema: górny poziom to punkty strony A, dolny strony B.
 // Wygrany punkt przenosi linię na stronę zawodnika; płaski odcinek to seria punktów.
-export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, setLabel = (n) => `Set ${n}`, hint }) {
+export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, setLabel = (n) => `Set ${n}`, prevLabel = "<", nextLabel = ">", hint }) {
   const { t } = useThemeCtx();
   const c = sideColors(t);
   const longest = useMemo(() => games.reduce((bi, g, i) => (g.points.length > games[bi].points.length ? i : bi), 0), [games]);
@@ -193,6 +193,8 @@ export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, setLabel = 
   }, [games]);
   if (!games.length) return null;
   const g = games[Math.min(sel, games.length - 1)];
+  const go = (d) => setSel((v) => Math.max(0, Math.min(games.length - 1, v + d)));
+  const arrow = { width: 44, height: 44, borderRadius: 22, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: `1px solid ${t.glassLine}`, flex: "0 0 auto" };
   const W = 380, H = 230, pl = 22, pr = 22, yA = 70, yB = 170, yMid = 120;
   const n = g.points.length;
   const step = n > 1 ? Math.min(46, (W - pl - pr) / (n - 1)) : 0;
@@ -200,22 +202,32 @@ export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, setLabel = 
   const y = (p) => (p.a ? yA : yB);
   return (
     <div style={{ padding: "0 8px 10px" }}>
-      <div style={{ padding: "2px 6px 6px" }}>
-        {sets.map(([setNo, items]) => (
-          <div key={setNo} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <span style={{ flex: "0 0 48px", fontSize: 12, color: t.textSub }}>{setLabel(setNo)}</span>
-            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-              {items.map(({ gm, i }) => (
-                <button key={i} onClick={() => setSel(i)} aria-pressed={i === sel} aria-label={chipLabel(gm)} style={{
-                  minWidth: 36, height: 36, padding: 0, borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13,
-                  border: `2px solid ${gm.winner === TEAM1 ? c.a : c.b}`, background: i === sel ? (gm.winner === TEAM1 ? c.a : c.b) : "transparent",
-                  color: i === sel ? "#fff" : t.text, fontWeight: i === sel ? 700 : 500,
-                }}>{gm.game}</button>
-              ))}
-            </div>
+      <div style={{ padding: "0 6px 6px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <button onClick={() => go(-1)} aria-label={prevLabel} aria-disabled={sel === 0} style={{ ...arrow, opacity: sel === 0 ? 0.35 : 1 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.text} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+          </button>
+          <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: t.text }}>
+            {chipLabel(g)} <span style={{ fontWeight: 400, color: t.textSub }}>· {ptsLabel(g.points.length)}</span>
           </div>
-        ))}
-        <div style={{ fontSize: 13, color: t.textSub }}>{chipLabel(g)} · {ptsLabel(g.points.length)}</div>
+          <button onClick={() => go(1)} aria-label={nextLabel} aria-disabled={sel === games.length - 1} style={{ ...arrow, opacity: sel === games.length - 1 ? 0.35 : 1 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.text} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: "2px 0", marginTop: 4 }}>
+          {sets.map(([setNo, items]) => (
+            <div key={setNo} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", justifyContent: "center", margin: "0 7px" }}>
+              {items.map(({ gm, i }) => {
+                const col = gm.winner === TEAM1 ? c.a : c.b;
+                return (
+                  <button key={i} onClick={() => setSel(i)} aria-pressed={i === sel} aria-label={chipLabel(gm)} style={{ width: 26, height: 30, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ width: i === sel ? 16 : 11, height: i === sel ? 16 : 11, borderRadius: "50%", background: col, boxShadow: i === sel ? `0 0 0 2px ${t.bg}, 0 0 0 4px ${t.text}` : "none" }} />
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`${chipLabel(g)}: ${g.points.map((p) => (p.a ? nameA : nameB) + " " + p.label).join(", ")}`}>
         <text x="6" y="16" fontSize="12" fill={t.textSub}>{nameA}</text>
