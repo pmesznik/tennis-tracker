@@ -108,6 +108,67 @@
   .stat-block{ border-top:1px solid var(--border); padding:6px 0 0; }
   .stat-block .stat-row{ border-top:none; padding:0 0 4px; }
   .stat-label{ flex:1.6; text-align:center; font-size:10.5px; color:var(--text-muted); text-transform:uppercase; }
+  /* ---------- widok na żywo v2: zegary, wykresy, statystyki; na telefonie przesuwane ekrany ---------- */
+  :root{ --ca:#f98513; --cb:#4da3ff; }
+  .card.wide{ max-width:560px; padding:20px 16px; text-align:left; }
+  .v2{ display:flex; align-items:flex-start; overflow-x:auto; scroll-snap-type:x mandatory; gap:12px; scrollbar-width:none; margin-top:6px; }
+  .v2::-webkit-scrollbar{ display:none; }
+  .v2 > .pane{ flex:0 0 100%; scroll-snap-align:start; min-width:0; }
+  .dots{ display:flex; justify-content:center; gap:8px; margin-top:12px; }
+  .dots i{ width:7px; height:7px; border-radius:50%; background:var(--text-muted); transition:all .2s; }
+  .dots i.on{ background:var(--text); width:18px; border-radius:4px; }
+  .box{ background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:16px; }
+  .box + .box{ margin-top:12px; }
+  .box h3{ margin:0 0 8px; font-size:11px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); }
+  .v2top{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .sc{ display:grid; grid-template-columns:1fr; gap:16px; justify-items:center; }
+  .sc-names{ width:100%; }
+  .prow{ display:flex; align-items:center; gap:10px; padding:5px 0; }
+  .prow .nm{ flex:1; min-width:0; font-size:20px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .prow .bar-s{ width:5px; height:26px; border-radius:3px; flex:0 0 auto; }
+  .prow .ss{ display:flex; gap:6px; font-family:var(--score); font-size:28px; font-weight:700; }
+  .prow .ss span{ min-width:26px; text-align:center; color:var(--text-sub); }
+  .prow .ss span.w{ color:var(--text); }
+  .prow.a .nm{ color:var(--ca); } .prow.b .nm{ color:var(--cb); }
+  .prow.a .bar-s{ background:var(--ca); } .prow.b .bar-s{ background:var(--cb); }
+  .gamet{ display:flex; align-items:center; gap:10px; }
+  .gamet .score-tile{ border:1px solid transparent; }
+  .gamet .ta .score-tile{ border-color:var(--ca); } .gamet .tb .score-tile{ border-color:var(--cb); }
+  .gamet .ta span{ color:var(--ca); } .gamet .tb span{ color:var(--cb); }
+  .clocks{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .clk{ text-align:center; --cc:var(--accent); }
+  .clk.accent{ --cc:var(--accent); } .clk.muted{ --cc:var(--text-sub); } .clk.warning{ --cc:#f0a93a; } .clk.danger{ --cc:#ef4444; }
+  .clk-l{ font-size:10px; font-weight:800; letter-spacing:0.1em; color:var(--text-muted); margin-bottom:5px; display:flex; align-items:center; justify-content:center; gap:5px; }
+  .clk-l::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--cc); box-shadow:0 0 6px var(--cc); }
+  .clk.danger .clk-l::before{ animation:pulse 1s ease-in-out infinite; }
+  .clk-t{ display:flex; align-items:center; gap:3px; }
+  .ft{
+    position:relative; min-width:38px; height:50px; padding:0 6px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg,#2a3154 0%,#171b30 100%); border-radius:8px; border:1px solid color-mix(in srgb, var(--cc) 40%, transparent);
+    box-shadow:0 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1); overflow:hidden;
+    font-family:var(--score); font-weight:800; font-size:30px; line-height:1; color:var(--cc); font-variant-numeric:tabular-nums;
+  }
+  .ft::before{ content:""; position:absolute; top:50%; left:0; right:0; height:2px; background:rgba(0,0,0,0.45); }
+  .ft.flip{ animation:flipIn .45s ease-out; }
+  @keyframes flipIn{ 0%{ transform:perspective(200px) rotateX(-70deg); opacity:.4; } 100%{ transform:none; opacity:1; } }
+  .fc{ color:var(--cc); font-weight:800; font-size:20px; opacity:.7; }
+  .legend{ display:flex; gap:14px; font-size:12px; margin-top:6px; }
+  .legend .la{ color:var(--ca); font-weight:700; } .legend .lb{ color:var(--cb); font-weight:700; }
+  .hint{ font-size:12px; color:var(--text-muted); margin-top:6px; }
+  .sr{ display:flex; justify-content:space-between; font-size:15px; font-weight:800; padding-top:8px; border-top:1px solid var(--border); margin-top:8px; }
+  .sr .l{ color:var(--ca); } .sr .r{ color:var(--cb); }
+  .sl{ flex:1.6; text-align:center; font-size:10.5px; color:var(--text-muted); text-transform:uppercase; }
+  .sbar{ display:flex; height:5px; border-radius:3px; overflow:hidden; gap:2px; margin:4px 0 2px; }
+  @media (min-width:900px){
+    .card.wide{ max-width:1100px; padding:26px 28px; }
+    .v2{ display:grid; grid-template-columns:1.35fr 1fr; grid-template-areas:"score score" "charts stats"; overflow:visible; align-items:stretch; gap:16px; }
+    .v2 > .pane{ flex:none; }
+    .p-score{ grid-area:score; } .p-charts{ grid-area:charts; } .p-stats{ grid-area:stats; }
+    .dots{ display:none; }
+    .sc{ grid-template-columns:1.2fr auto auto; align-items:center; justify-items:stretch; gap:28px; }
+    .sc .gamet{ justify-content:center; } .sc .clocks{ flex-direction:column; gap:10px; }
+    .ft{ min-width:44px; height:56px; font-size:34px; }
+  }
 </style>
 </head>
 <body>
@@ -178,6 +239,10 @@
     st.setProperty("--accent", th.accent);
     st.setProperty("--accent2", th.accent2);
     st.setProperty("--on", th.on);
+    const hx = String(th.accent || "").replace("#", "");
+    const blueAccent = hx.length === 6 && parseInt(hx.slice(4, 6), 16) > parseInt(hx.slice(0, 2), 16);
+    st.setProperty("--ca", th.accent);
+    st.setProperty("--cb", blueAccent ? "#FF9A3D" : "#4DA3FF");
   }
 
   function fromBase64Url(b64url) {
@@ -230,6 +295,162 @@
     return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
   }
 
+  // ---------- widok na żywo v2 ----------
+  const LIVE = { data: null, recvAt: 0, timer: null };
+  const $id = (x) => document.getElementById(x);
+  const pad2 = (n) => String(n).padStart(2, "0");
+
+  function setClock(el, ms, tone) {
+    if (!el) return;
+    const sec = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), sc = sec % 60;
+    const parts = h > 0 ? [String(h), pad2(m), pad2(sc)] : [pad2(m), pad2(sc)];
+    const box = el.querySelector(".clk-t");
+    if (box.querySelectorAll(".ft").length !== parts.length) {
+      box.innerHTML = parts.map(() => '<span class="ft"></span>').join('<span class="fc">:</span>');
+    }
+    const tiles = box.querySelectorAll(".ft");
+    parts.forEach((v, i) => {
+      if (tiles[i].textContent !== v) {
+        tiles[i].textContent = v;
+        tiles[i].classList.remove("flip"); void tiles[i].offsetWidth; tiles[i].classList.add("flip");
+      }
+    });
+    el.className = "clk " + tone;
+  }
+
+  function tickClocks() {
+    const d = LIVE.data;
+    if (!d || d.ms == null) return;
+    const add = d.paused ? 0 : Date.now() - LIVE.recvAt;
+    setClock($id("clkM"), d.ms + add, d.paused ? "muted" : "accent");
+    if (d.ps != null) {
+      const ps = d.ps + add;
+      setClock($id("clkP"), ps, d.paused ? "muted" : ps >= 25000 ? "danger" : ps >= 15000 ? "warning" : "muted");
+    }
+  }
+
+  function flowSvg2(series) {
+    if (!Array.isArray(series) || series.length < 2) return "";
+    const W = 400, H = 130, pad = 4;
+    const max = Math.max(3, ...series.map((v) => Math.abs(v)));
+    const x = (i) => pad + (i / (series.length - 1)) * (W - 2 * pad);
+    const y = (v) => H / 2 - (v / max) * (H / 2 - pad);
+    const pts = series.map((v, i) => x(i).toFixed(1) + "," + y(v).toFixed(1)).join(" ");
+    const area = x(0) + "," + H / 2 + " " + pts + " " + x(series.length - 1) + "," + H / 2;
+    return '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" height="130" preserveAspectRatio="none" role="img" aria-label="Przebieg meczu">' +
+      '<defs><clipPath id="cu"><rect x="0" y="0" width="' + W + '" height="' + H / 2 + '"/></clipPath><clipPath id="cd"><rect x="0" y="' + H / 2 + '" width="' + W + '" height="' + H / 2 + '"/></clipPath></defs>' +
+      '<line x1="0" y1="' + H / 2 + '" x2="' + W + '" y2="' + H / 2 + '" stroke="var(--border)"/>' +
+      '<polygon points="' + area + '" fill="var(--ca)" opacity="0.28" clip-path="url(#cu)"/>' +
+      '<polygon points="' + area + '" fill="var(--cb)" opacity="0.28" clip-path="url(#cd)"/>' +
+      '<polyline points="' + pts + '" fill="none" stroke="var(--text)" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>';
+  }
+
+  // Bieżący gem na dwóch poziomach: A u góry, B na dole; wygrany punkt przenosi linię na stronę zwycięzcy.
+  function gameSvg(gp, isTb, nameA, nameB) {
+    const W = 400, H = 190, yA = 58, yB = 138, yM = 98;
+    const arr = String(gp || "").split("");
+    const head = '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="Przebieg bieżącego gema">' +
+      '<text x="4" y="14" font-size="12" font-weight="700" fill="var(--ca)">' + esc(nameA) + "</text>" +
+      '<text x="4" y="' + (H - 4) + '" font-size="12" font-weight="700" fill="var(--cb)">' + esc(nameB) + "</text>" +
+      '<line x1="10" y1="' + yM + '" x2="' + (W - 10) + '" y2="' + yM + '" stroke="var(--border)" stroke-width="1.2"/>';
+    if (!arr.length) return head + '<text x="' + W / 2 + '" y="' + yM + '" text-anchor="middle" dy="-8" font-size="13" fill="var(--text-muted)">Nowy gem</text></svg>';
+    const step = arr.length > 1 ? Math.min(44, (W - 50) / (arr.length - 1)) : 0;
+    const px = (i) => 28 + i * step;
+    const py = (a) => (a === "a" ? yA : yB);
+    let ca = 0, cb = 0, lines = "", dots = "";
+    const labels = arr.map((c) => {
+      const a = c === "a";
+      if (a) ca++; else cb++;
+      const w = a ? ca : cb, l = a ? cb : ca;
+      return isTb ? String(w) : (w >= 3 && l >= 3) ? (w > l ? "AD" : "40") : ["0", "15", "30", "40"][Math.min(w, 3)];
+    });
+    arr.forEach((c, i) => {
+      if (i > 0) lines += '<line x1="' + px(i - 1) + '" y1="' + py(arr[i - 1]) + '" x2="' + px(i) + '" y2="' + py(c) + '" stroke="var(' + (c === "a" ? "--ca" : "--cb") + ')" stroke-width="3.5" stroke-linecap="round"/>';
+      const col = c === "a" ? "--ca" : "--cb";
+      dots += '<circle cx="' + px(i) + '" cy="' + py(c) + '" r="' + (i === arr.length - 1 ? 6 : 4.5) + '" fill="' + (i === arr.length - 1 ? "var(" + col + ")" : "var(--bgcolor)") + '" stroke="var(' + col + ')" stroke-width="2"/>' +
+        '<text x="' + px(i) + '" y="' + (c === "a" ? yA - 12 : yB + 22) + '" text-anchor="middle" font-size="' + (arr.length > 12 ? 11 : 13) + '" fill="var(--text)">' + labels[i] + "</text>";
+    });
+    return head + lines + dots + "</svg>";
+  }
+
+  function statRow2(label, a, b, aText, bText) {
+    const sum = (a || 0) + (b || 0);
+    const pa = sum ? ((a || 0) / sum) * 100 : 50;
+    const op = sum ? 1 : 0.25;
+    return '<div class="stat-block"><div class="stat-row"><strong style="color:var(--ca)">' + (aText != null ? aText : a) + '</strong><span class="sl">' + label +
+      '</span><strong style="color:var(--cb)">' + (bText != null ? bText : b) + '</strong></div><div class="sbar"><div style="width:' + pa + '%;background:var(--ca);opacity:' + op +
+      '"></div><div style="width:' + (100 - pa) + '%;background:var(--cb);opacity:' + op + '"></div></div></div>';
+  }
+
+  function renderLive2(data) {
+    const card = $id("card");
+    card.classList.add("wide");
+    const content = $id("content");
+    const t1 = (data.t1 || []).filter(Boolean).join(" / ") || "Gracz 1";
+    const t2 = (data.t2 || []).filter(Boolean).join(" / ") || "Gracz 2";
+    const sets = Array.isArray(data.sets) ? data.sets : [];
+    const surface = data.sf || null;
+    applyTheme(data.pal, surface);
+    const winner = data.matchWinner || null;
+    const isPaused = !!(data.paused && !winner);
+    LIVE.data = data; LIVE.recvAt = Date.now();
+
+    const parsed = sets.map((x) => { const m = /^(\d+)-(\d+)/.exec(String(x)); return m ? [Number(m[1]), Number(m[2])] : null; });
+    const setCells = (side) => parsed.map((pr, i) => pr
+      ? '<span class="' + ((side === 0 ? pr[0] > pr[1] : pr[1] > pr[0]) ? "w" : "") + '">' + pr[side] + "</span>"
+      : (side === 0 ? "<span>" + esc(sets[i]) + "</span>" : "")).join("");
+    const ball = (who) => (!winner && data.server === who ? '<span class="name-ball">' + BALL_SVG + "</span>" : "");
+    const tile = (cls, v, who) => '<div class="game-wrap ' + cls + '">' + (!winner && data.server === who ? '<span class="serve-ball ' + (who === "team1" ? "left" : "right") + '">' + BALL_SVG + "</span>" : "") +
+      '<div class="score-tile"><span>' + esc(v) + "</span></div></div>";
+    const hasGame = !winner && (data.gameA != null || data.gameB != null);
+    const clocks = data.ms != null && !winner
+      ? '<div class="clocks"><div class="clk accent" id="clkM"><div class="clk-l">MECZ</div><div class="clk-t"></div></div>' +
+        (data.ps != null ? '<div class="clk muted" id="clkP"><div class="clk-l">PUNKT</div><div class="clk-t"></div></div>' : "") + "</div>"
+      : "";
+    const meta = [];
+    if (data.d) meta.push(esc(data.d));
+    if (surface) meta.push('<span class="dot"></span>' + esc(surface));
+
+    const hasStats = data.st1 && data.st2;
+    const rows =
+      (Array.isArray(data.pts) ? statRow2("Wygrane punkty", data.pts[0], data.pts[1]) : "") +
+      (data.bp1 && data.bp2 && (data.bp1[1] || data.bp2[1]) ? statRow2("Break pointy wykorzystane", ratio(data.bp1), ratio(data.bp2), data.bp1[0] + "/" + data.bp1[1], data.bp2[0] + "/" + data.bp2[1]) : "") +
+      (hasStats ? STAT_LABELS.map(([key, label]) => statRow2(label, data.st1[key] ?? 0, data.st2[key] ?? 0)).join("") : "");
+
+    const flow = flowSvg2(data.fl);
+    content.innerHTML =
+      '<div class="v2top"><div>' + (isPaused ? '<div class="live-badge paused" style="margin:0">⏸ PAUZA</div>' : winner ? '<div class="pro-badge" style="margin:0">KONIEC</div>' : '<div class="live-badge" style="margin:0">🔴 NA ŻYWO</div>') +
+      '</div><div class="meta">' + meta.join(" &nbsp;·&nbsp; ") + "</div></div>" +
+      '<div class="v2" id="v2">' +
+      '<section class="pane p-score"><div class="box"><div class="sc">' +
+      '<div class="sc-names">' +
+      '<div class="prow a"><span class="bar-s"></span><span class="nm">' + (winner === "team1" ? "🏆 " : "") + esc(t1) + ball("team1") + '</span><span class="ss">' + setCells(0) + "</span></div>" +
+      '<div class="prow b"><span class="bar-s"></span><span class="nm">' + (winner === "team2" ? "🏆 " : "") + esc(t2) + ball("team2") + '</span><span class="ss">' + setCells(1) + "</span></div></div>" +
+      (hasGame ? '<div class="gamet"><div class="ta">' + tile("", data.gameA, "team1") + '</div><span class="colon" style="color:var(--text-muted);font-size:22px;font-weight:800">:</span><div class="tb">' + tile("", data.gameB, "team2") + "</div></div>" : "") +
+      clocks + "</div></div></section>" +
+      '<section class="pane p-stats"><div class="box"><h3>Statystyki</h3>' +
+      '<div class="legend"><span class="la">' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">' + esc(t2) + "</span></div>" +
+      (rows || '<div class="hint">Statystyki pojawią się po pierwszych punktach.</div>') + "</div></section>" +
+      '<section class="pane p-charts">' +
+      (flow ? '<div class="box"><h3>Przebieg meczu</h3>' + flow + '<div class="legend"><span class="la">▲ ' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">▼ ' + esc(t2) + "</span></div></div>" : "") +
+      '<div class="box"><h3>Bieżący gem</h3>' + gameSvg(data.gp, data.tb, t1, t2) + '<div class="hint">Wygrany punkt przenosi linię na stronę zawodnika. Płaski odcinek to seria punktów.</div></div></section>' +
+      "</div>" +
+      '<div class="dots" id="dots"><i class="on"></i><i></i><i></i></div>' +
+      '<div class="footer">' + (isPaused ? "Przerwa w meczu, gra wróci za chwilę" : "Wynik " + (winner ? "zapisany" : "na żywo") + " w aplikacji Tennis Tracker") + "</div>";
+
+    // Kolejność ekranów na telefonie: wynik, statystyki, wykresy (siatka na komputerze ustawia je sama).
+    const v2 = $id("v2"), dots = $id("dots");
+    if (v2 && dots) {
+      v2.addEventListener("scroll", () => {
+        const i = Math.round(v2.scrollLeft / Math.max(1, v2.clientWidth));
+        dots.querySelectorAll("i").forEach((d, k) => d.classList.toggle("on", k === i));
+      }, { passive: true });
+    }
+    tickClocks();
+    if (!LIVE.timer) LIVE.timer = setInterval(tickClocks, 1000);
+  }
+
   function renderMatch(data, opts) {
     opts = opts || {};
     const content = document.getElementById("content");
@@ -241,6 +462,8 @@
       return;
     }
 
+    if (opts.live && data.v >= 2) { renderLive2(data); return; }
+    $id("card").classList.remove("wide");
     const t1 = (data.t1 || []).filter(Boolean).join(" / ") || "Gracz 1";
     const t2 = (data.t2 || []).filter(Boolean).join(" / ") || "Gracz 2";
     const sets = Array.isArray(data.sets) ? data.sets : Array.isArray(data.s) ? data.s : [];

@@ -12,6 +12,7 @@ import { publishLiveScore } from "./liveSync.js";
 import { getStoredPalette } from "../theme.js";
 import { MoreButton, MatchOptionsModal, EditNamesModal, EndMatchModal, FinalSetModal } from "./TrackerModals.jsx";
 import { earlySetsRow } from "./earlyEnd.js";
+import { buildLiveExtras } from "./liveExtras.js";
 import { buildRenamePatch, buildSwapServerPatch } from "./matchEdit.js";
 
 const INITIAL_STAGE = { name: "serve1", rallyCount: 0, shotType: "forehand", atNet: false, serveUsed: "1st" };
@@ -31,6 +32,7 @@ function buildLivePayload(match, score) {
     sf: match.surface || null,
     d: match.date || null,
     pal: getStoredPalette() || "classic",
+    ...buildLiveExtras(match, score), // widok obserwatora v2: zegary, wykresy, statystyki
   };
 }
 
@@ -468,8 +470,8 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   );
   const pausedStyle = paused ? { opacity: 0.4, pointerEvents: "none" } : null;
   const TopRow = (
-    <div style={{ display: "flex", alignItems: "center", padding: "2px 16px 6px", justifyContent: "space-between" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+    <div style={{ display: "flex", alignItems: "center", padding: "2px 12px 6px", gap: 6, justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
         {liveShareButton}
         {!isBasic && (
           <span style={{ fontSize: 12, fontWeight: 650, color: t.textSub, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
@@ -488,7 +490,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         color: match.pointLog.length ? t.text : t.textMuted, borderRadius: 999, padding: "0 14px", minHeight: 40,
         fontWeight: 650, fontSize: 13, cursor: match.pointLog.length ? "pointer" : "default", fontFamily: "inherit",
         display: "flex", alignItems: "center", gap: 6, opacity: match.pointLog.length ? 1 : 0.6,
-      }}><Icon name="undo" size={18} />{tr("common.undo")}</button>
+      }} aria-label={tr("common.undo")}><Icon name="undo" size={18} />{window.innerWidth < 400 ? null : tr("common.undo")}</button>
     </div>
   );
 
