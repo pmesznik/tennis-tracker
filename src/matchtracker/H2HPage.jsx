@@ -37,11 +37,9 @@ function SeasonCard({ h, season, playerMode }) {
   return (
     <Card>
       <Title>{season === "all" ? tr("season.titleAll") : tr("season.title", { year: season })}</Title>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "4px 14px 12px", textAlign: "center" }}>
-        <div><div style={{ ...big, color: c.a }}>{s.won} : {s.lost}</div><div style={cap}>{tr("season.matches")}</div></div>
-        <div><div style={big}>{s.winPct}%</div><div style={cap}>{tr("season.winPct")}</div></div>
-        <div><div style={big}>{s.bestStreak}</div><div style={cap}>{tr("season.bestStreak")}</div></div>
-      </div>
+      {s.bestStreak > 1 && (
+        <div style={{ ...row, borderTop: "none", paddingTop: 2 }}><span style={{ color: t.textSub }}>{tr("season.bestStreak")}</span><strong>{s.bestStreak}</strong></div>
+      )}
       {s.byMonth.length > 0 && (
         <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 6 }}>
           <div style={{ padding: "2px 14px 0", fontSize: 12, color: t.textSub }}>{tr("season.byMonth")}</div>
