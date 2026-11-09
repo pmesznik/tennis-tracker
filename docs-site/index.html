@@ -581,6 +581,16 @@
       </p>
     </section>
 
+    <section id="pauza">
+      <div class="eyebrow">Przebieg meczu</div>
+      <h2>Pauza w meczu na żywo</h2>
+      <p>
+        Chip „Pauza” w rzędzie z zegarami zatrzymuje zegar meczu i zegar punktu, a przyciski punktu są wtedy nieaktywne do kliknięcia „Wznów”. Chip podświetla się na zmianie stron
+        (po nieparzystym gemie i po zakończonym secie). Czas pauzy nie wchodzi do czasu meczu, setów ani długości punktów: znaczniki czasu punktów są liczone jako <code>Date.now()</code> minus suma pauz
+        (<code>pausedMs</code>, <code>pausedAt</code> w zapisie meczu). Osoba oglądająca udostępniony mecz widzi żółtą plakietkę „PAUZA” zamiast „NA ŻYWO” (pole <code>paused</code> w danych na żywo).
+      </p>
+    </section>
+
     <section id="pdf-meczu">
       <div class="eyebrow">Statystyki</div>
       <h2>PDF z podsumowaniem i wykresy punktów</h2>

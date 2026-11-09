@@ -27,6 +27,7 @@ function buildLivePayload(match, score) {
     gameB: score.game?.b ?? null,
     server: match.initialServer ? (score.pointServer ?? score.server) : null, // przed wyborem serwującego nikt jeszcze nie serwuje
     matchWinner: match.resultWinner || score.matchWinner,
+    paused: match.pausedAt != null, // pauza (przerwa): widz widzi plakietkę zamiast NA ŻYWO
     sf: match.surface || null,
     d: match.date || null,
     pal: getStoredPalette() || "classic",
@@ -66,6 +67,23 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   }
 
   const rules = match.rules;
+  // Pauza (przerwa po secie, zmiana stron): zegary stoją, a czas pauzy nie
+  // wchodzi do czasu meczu, setów ani punktów. Wszystkie znaczniki czasu są w
+  // czasie "bez przerw" (Date.now() minus suma pauz), więc time.js i
+  // scoringEngine liczą poprawnie bez zmian.
+  const pausedMs = match.pausedMs || 0;
+  const paused = match.pausedAt != null;
+  const activeNow = (paused ? match.pausedAt : now) - pausedMs;
+  const applyPause = (patch) => {
+    const updated = storage.updateMatch(match.id, patch);
+    setMatch(updated);
+    // Widz udostępnionego meczu od razu widzi pauzę albo wznowienie.
+    if (updated.liveShareEnabled && updated.initialServer) {
+      publishLiveScore(updated.id, buildLivePayload(updated, computeScore(updated.rules, updated.pointLog, updated.initialServer || TEAM1, updated.startedAt)));
+    }
+  };
+  const handlePause = () => applyPause({ pausedAt: Date.now() });
+  const handleResume = () => applyPause({ pausedMs: pausedMs + (Date.now() - match.pausedAt), pausedAt: null });
   const score = computeScore(rules, match.pointLog, match.initialServer || TEAM1, match.startedAt);
   const name1 = teamLabel(TEAM1, match.team1.names, match.team2.names, tr("common.player1"), tr("common.player2"));
   const name2 = teamLabel(TEAM2, match.team1.names, match.team2.names, tr("common.player1"), tr("common.player2"));
@@ -76,7 +94,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
       pointLog: newLog,
       status: newScore.matchWinner ? "completed" : "in_progress",
       // Cofnij może "odkończyć" mecz — wtedy endedAt wraca na null.
-      endedAt: newScore.matchWinner ? (match.endedAt || Date.now()) : null,
+      endedAt: newScore.matchWinner ? (match.endedAt || Date.now() - (match.pausedMs || 0)) : null,
       ...extraPatch,
     };
     const updated = storage.updateMatch(match.id, patch);
@@ -146,7 +164,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   );
 
   const commitPoint = (winner, extra = {}) => {
-    const point = { winner, server: score.pointServer ?? score.server, t: Date.now(), ...extra };
+    const point = { winner, server: score.pointServer ?? score.server, t: Date.now() - pausedMs, ...extra };
     persist([...match.pointLog, point]);
   };
 
@@ -193,7 +211,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   // Krecz / walkower / dyskwalifikacja: mecz kończy się przed czasem, wygrywa
   // rywal; punkty zagrane do tej chwili zostają w statystykach.
   const handleEndEarly = (reason, loserTeam) => {
-    const updated = storage.updateMatch(match.id, { status: "completed", endReason: reason, resultWinner: otherTeam(loserTeam), endedAt: Date.now() });
+    const updated = storage.updateMatch(match.id, { status: "completed", endReason: reason, resultWinner: otherTeam(loserTeam), endedAt: Date.now() - pausedMs });
     setMatch(updated);
     setEndingMatch(false);
     if (updated.liveShareEnabled && updated.initialServer) {
@@ -422,18 +440,33 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   const lastPointAt = match.pointLog.length ? match.pointLog[match.pointLog.length - 1].t : null;
   const pointStartRef = lastPointAt ?? score.currentSetStartedAt ?? match.startedAt;
   const matchClock = match.startedAt != null && (
-    <ClockChip ms={now - match.startedAt} tone="accent" pulse />
+    <ClockChip ms={activeNow - match.startedAt} tone={paused ? "muted" : "accent"} pulse={!paused} />
   );
   // Progi jak w prawdziwym zegarze serwisowym ATP/WTA (25s na serwis) —
   // ostrzega kolorem, że wymiana/przerwa się przeciąga.
-  const pointElapsedMs = pointStartRef != null ? now - pointStartRef : null;
-  const pointClockTone = pointElapsedMs == null ? "muted" : pointElapsedMs >= 25000 ? "danger" : pointElapsedMs >= 15000 ? "warning" : "muted";
+  const pointElapsedMs = pointStartRef != null ? activeNow - pointStartRef : null;
+  const pointClockTone = pointElapsedMs == null || paused ? "muted" : pointElapsedMs >= 25000 ? "danger" : pointElapsedMs >= 15000 ? "warning" : "muted";
 
   const isBasic = match.trackingDepth === "basic";
   const stageLabel = stage.name === "serve1" ? tr("tracker.stage.serve1")
     : stage.name === "serve2" ? tr("tracker.stage.serve2")
     : stage.name === "rally" ? tr("tracker.stage.rally")
     : tr("tracker.stage.pointEnd");
+  // Zmiana stron: po nieparzystym gemie w secie albo po zakończonym secie, gdy
+  // trwa świeży gem 0:0. Wtedy chip pauzy jest podświetlony.
+  const gamesInSet = score.curSetGamesA + score.curSetGamesB - 2 * (score.setStartGames || 0);
+  const gameFresh = score.game && score.game.a === "0" && score.game.b === "0" && !score.game.isTiebreak;
+  const atBreak = !paused && !score.matchWinner && match.pointLog.length > 0 && gameFresh && (gamesInSet % 2 === 1 || gamesInSet === 0);
+  const PauseChip = (
+    <button onClick={paused ? handleResume : handlePause} aria-pressed={paused} style={{
+      background: paused ? t.accent : atBreak ? t.tonalStrong : t.tonal,
+      color: paused ? "#0A0A12" : t.text,
+      border: `1px solid ${paused || atBreak ? t.accent : "transparent"}`,
+      borderRadius: 999, padding: "0 14px", minHeight: 40, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+      display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+    }}><Icon name={paused ? "play" : "pause"} size={18} />{paused ? tr("tracker.resume") : tr("tracker.pause")}</button>
+  );
+  const pausedStyle = paused ? { opacity: 0.4, pointerEvents: "none" } : null;
   const TopRow = (
     <div style={{ display: "flex", alignItems: "center", padding: "2px 16px 6px", justifyContent: "space-between" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -449,7 +482,8 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
           </span>
         )}
       </div>
-      <button onClick={handleUndo} disabled={match.pointLog.length === 0} style={{
+      {PauseChip}
+      <button onClick={handleUndo} disabled={match.pointLog.length === 0 || paused} style={{
         background: match.pointLog.length ? t.tonal : "transparent", border: "none",
         color: match.pointLog.length ? t.text : t.textMuted, borderRadius: 999, padding: "0 14px", minHeight: 40,
         fontWeight: 650, fontSize: 13, cursor: match.pointLog.length ? "pointer" : "default", fontFamily: "inherit",
@@ -468,7 +502,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={<>{matchClock}{namesButton}</>} />
         {Header}
         {TopRow}
-        <div style={{ flex: 1, minHeight: 0, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "row", gap: 12 }}>
+        <div style={{ flex: 1, minHeight: 0, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "row", gap: 12, ...pausedStyle }}>
           {(swapSides ? [TEAM2, TEAM1] : [TEAM1, TEAM2]).map((tm) => (
             <BigButton key={tm} label={tr("tracker.pointFor", { name: tm === TEAM1 ? name1 : name2 })}
               color={tm === TEAM1 ? t.bigA.bg : t.bigB.bg} textColor={tm === TEAM1 ? t.bigA.fg : t.bigB.fg}
@@ -594,7 +628,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
       <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={<>{matchClock}{namesButton}</>} />
       {Header}
       {TopRow}
-      {body}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", ...pausedStyle }}>{body}</div>
       {namesModal}{finalSetModal}
     </FullScreen>
   );
