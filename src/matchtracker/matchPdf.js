@@ -115,6 +115,23 @@ export async function renderMatchPages(d) {
     drawFlowChart(ctx, tl, M, y, PW - 2 * M, 170);
     y += 200;
 
+    // Przebieg gemów: każdy set w jednej linii, dwa poziomy (A u góry, B na dole)
+    if (d.gameList && d.gameList.length) {
+      const bySet = new Map();
+      d.gameList.forEach((g) => { if (!bySet.has(g.set)) bySet.set(g.set, []); bySet.get(g.set).push(g); });
+      need(150);
+      text(L.gameFlowTitle, M, y, font(500, 34), C.ink); y += 34;
+      text(L.gameFlowHint, M, y, font(400, 24), C.sub); y += 16;
+      for (const [setNo, gl] of bySet) {
+        need(200);
+        text(L.setN.replace("{n}", setNo), M, y + 30, font(500, 28), C.ink);
+        y += 40;
+        drawSetFlow(ctx, gl, M, y, PW - 2 * M, 130, d.shortA, d.shortB);
+        y += 160;
+      }
+      y += 10;
+    }
+
     // Gemy po kolei
     need(60 + tl.games.length * 40);
     text(L.gamesTitle, M, y, font(500, 34), C.ink); y += 14;
@@ -189,6 +206,43 @@ function drawPointsChart(ctx, tl, x, y, w, h, L) {
   [[tl.a, C.a], [tl.b, C.b]].forEach(([arr, color]) => {
     ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(px(n), py(arr[n]), 11, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = color; ctx.beginPath(); ctx.arc(px(n), py(arr[n]), 7, 0, Math.PI * 2); ctx.fill();
+  });
+}
+
+// Cały set w jednej linii: punkty kolejno, górny poziom to strony A, dolny strony B.
+// Odcinek ma kolor zwycięzcy punktu; cienkie pionowe linie dzielą gemy (numer u góry).
+function drawSetFlow(ctx, games, x, y, w, h, nameA, nameB) {
+  const pts = [];
+  const bounds = [];
+  games.forEach((g) => { g.points.forEach((p, i) => pts.push({ a: p.a, last: i === g.points.length - 1, g })); bounds.push(pts.length - 1); });
+  const n = pts.length;
+  if (!n) return;
+  const padL = 70, padR = 20, top = y + 26, bot = y + h - 6, mid = (top + bot) / 2;
+  const step = n > 1 ? (w - padL - padR) / (n - 1) : 0;
+  const px = (i) => x + padL + i * step;
+  const py = (p) => (p.a ? top + 12 : bot - 12);
+  ctx.font = font(400, 20); ctx.textAlign = "left"; ctx.fillStyle = C.a; ctx.fillText(nameA, x, top + 18);
+  ctx.fillStyle = C.b; ctx.fillText(nameB, x, bot - 6);
+  ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + padL - 10, mid); ctx.lineTo(x + w - padR + 10, mid); ctx.stroke();
+  // podziały gemów i numery
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1.5; ctx.fillStyle = C.muted; ctx.font = font(400, 18); ctx.textAlign = "center";
+  let from = 0;
+  games.forEach((g, gi) => {
+    const to = bounds[gi];
+    const xe = px(to) + step / 2;
+    if (gi < games.length - 1) { ctx.beginPath(); ctx.moveTo(xe, top - 4); ctx.lineTo(xe, bot + 4); ctx.stroke(); }
+    ctx.fillText(String(g.game), (px(from) + px(to)) / 2, y + 16);
+    from = to + 1;
+  });
+  ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  for (let i = 1; i < n; i++) {
+    ctx.strokeStyle = pts[i].a ? C.a : C.b;
+    ctx.beginPath(); ctx.moveTo(px(i - 1), py(pts[i - 1])); ctx.lineTo(px(i), py(pts[i])); ctx.stroke();
+  }
+  pts.forEach((p, i) => {
+    ctx.fillStyle = p.last ? (p.g.winner === "team1" ? C.a : C.b) : "#fff";
+    ctx.strokeStyle = p.a ? C.a : C.b; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px(i), py(p), p.last ? 7 : 3.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   });
 }
 

@@ -125,11 +125,11 @@ export default function MatchSummaryPage({ matchId, onBack, onContinue, onDelete
       L: {
         title: tr("summary.title"), vs: tr("common.vs"), setN: tr("summary.setN", { n: "{n}" }),
         pointsTitle: tr("summary.pointsChartTitle"), pointsHint: tr("pdf.pointsHint"),
-        flowTitle: tr("summary.flowTitle"), flowHint: tr("pdf.flowHint"), gamesTitle: tr("pdf.gamesTitle"),
+        flowTitle: tr("summary.flowTitle"), flowHint: tr("pdf.flowHint"), gamesTitle: tr("pdf.gamesTitle"), gameFlowTitle: tr("summary.gameFlowTitle"), gameFlowHint: tr("pdf.gameFlowHint"),
         footer: tr("pdf.footer"), pageOf: tr("pdf.pageOf", { n: "{n}", m: "{m}" }),
       },
       nameA: name1, nameB: name2, shortA: name1.split(" ")[0], shortB: name2.split(" ")[0],
-      headline, sets: setsList, winner: winnerSide,
+      gameList, headline, sets: setsList, winner: winnerSide,
       note: match.endReason ? tr("summary.endedEarly", { reason: tr(`tracker.reason.${match.endReason}`), winner: match.resultWinner === TEAM1 ? name1 : name2 }) : "",
       timeline, rows,
       extra: extraLines,
