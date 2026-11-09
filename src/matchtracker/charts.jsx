@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useThemeCtx } from "../theme.js";
 import { flowSeries } from "./stats.js";
 import { sampleIndexes } from "./timeline.js";
+import { TEAM1 } from "./scoringEngine.js";
 
 export function sideColors(t) {
   return { a: t.accent, b: "#B8BCC8" }; // B: neutralny jasnoszary, czytelny na każdej nawierzchni
@@ -180,11 +181,16 @@ export function SetPointsBars({ timeline, setLabel = (n) => `Set ${n}` }) {
 
 // Przebieg jednego gema: górny poziom to punkty strony A, dolny strony B.
 // Wygrany punkt przenosi linię na stronę zawodnika; płaski odcinek to seria punktów.
-export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, hint }) {
+export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, setLabel = (n) => `Set ${n}`, hint }) {
   const { t } = useThemeCtx();
   const c = sideColors(t);
   const longest = useMemo(() => games.reduce((bi, g, i) => (g.points.length > games[bi].points.length ? i : bi), 0), [games]);
   const [sel, setSel] = useState(longest);
+  const sets = useMemo(() => {
+    const m = new Map();
+    games.forEach((gm, i) => { if (!m.has(gm.set)) m.set(gm.set, []); m.get(gm.set).push({ gm, i }); });
+    return [...m.entries()];
+  }, [games]);
   if (!games.length) return null;
   const g = games[Math.min(sel, games.length - 1)];
   const W = 380, H = 230, pl = 22, pr = 22, yA = 70, yB = 170, yMid = 120;
@@ -194,14 +200,22 @@ export function GameFlow({ games, nameA, nameB, chipLabel, ptsLabel, hint }) {
   const y = (p) => (p.a ? yA : yB);
   return (
     <div style={{ padding: "0 8px 10px" }}>
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "2px 6px 8px" }}>
-        {games.map((gm, i) => (
-          <button key={i} onClick={() => setSel(i)} aria-pressed={i === sel} style={{
-            flex: "0 0 auto", minHeight: 36, padding: "0 12px", borderRadius: 999, cursor: "pointer", fontFamily: "inherit", fontSize: 13,
-            border: `1px solid ${i === sel ? t.accent : t.glassLine}`, background: i === sel ? t.tonalStrong : "transparent",
-            color: i === sel ? t.text : t.textSub, fontWeight: i === sel ? 700 : 500,
-          }}>{chipLabel(gm)}{i === sel ? ` · ${ptsLabel(gm.points.length)}` : ""}</button>
+      <div style={{ padding: "2px 6px 6px" }}>
+        {sets.map(([setNo, items]) => (
+          <div key={setNo} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+            <span style={{ flex: "0 0 48px", fontSize: 12, color: t.textSub }}>{setLabel(setNo)}</span>
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {items.map(({ gm, i }) => (
+                <button key={i} onClick={() => setSel(i)} aria-pressed={i === sel} aria-label={chipLabel(gm)} style={{
+                  minWidth: 36, height: 36, padding: 0, borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13,
+                  border: `2px solid ${gm.winner === TEAM1 ? c.a : c.b}`, background: i === sel ? (gm.winner === TEAM1 ? c.a : c.b) : "transparent",
+                  color: i === sel ? "#fff" : t.text, fontWeight: i === sel ? 700 : 500,
+                }}>{gm.game}</button>
+              ))}
+            </div>
+          </div>
         ))}
+        <div style={{ fontSize: 13, color: t.textSub }}>{chipLabel(g)} · {ptsLabel(g.points.length)}</div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`${chipLabel(g)}: ${g.points.map((p) => (p.a ? nameA : nameB) + " " + p.label).join(", ")}`}>
         <text x="6" y="16" fontSize="12" fill={t.textSub}>{nameA}</text>
