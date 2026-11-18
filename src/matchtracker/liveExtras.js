@@ -30,7 +30,13 @@ export function buildLiveExtras(match, score, nowMs = Date.now()) {
     const lastEnd = tl && tl.gameEnds.length ? tl.gameEnds[tl.gameEnds.length - 1].end : 0;
     const cur = log.slice(lastEnd);
     if (cur.length) ex.gp = cur.map((p) => (p.winner === TEAM1 ? "a" : "b")).join("");
-    ex.tb = !!score?.game?.isTiebreak;
+    // punkty bieżącego seta; "|" oddziela zakończone gemy (do wykresu „punkty w secie")
+    const setStart = tl && tl.setEnds.length ? tl.setEnds[tl.setEnds.length - 1] : 0;
+    const inSet = log.slice(setStart);
+    if (inSet.length) {
+      const cuts = new Set((tl ? tl.gameEnds : []).map((g) => g.end - setStart).filter((e) => e > 0 && e < inSet.length));
+      ex.sp = inSet.map((p, k) => (p.winner === TEAM1 ? "a" : "b") + (cuts.has(k + 1) ? "|" : "")).join("");
+    }
   } catch { /* bez wykresu gema */ }
   if (match.trackingDepth !== "basic" && log.length) {
     const { stats } = computeStats(log);

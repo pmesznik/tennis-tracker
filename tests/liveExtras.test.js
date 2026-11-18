@@ -27,3 +27,12 @@ describe("buildLiveExtras", () => {
     expect(e.ms).toBe(5000 - 1000 - 1000);
   });
 });
+
+describe("buildLiveExtras punkty seta", () => {
+  it("rozdziela gemy znakiem |", () => {
+    const w = ["team1", "team1", "team1", "team1", "team2", "team1"];
+    const m = mk(w);
+    const sc = computeScore(rules, m.pointLog, "team1", m.startedAt);
+    expect(buildLiveExtras(m, sc, 10000).sp).toBe("aaaa|ba");
+  });
+});

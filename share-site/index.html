@@ -149,6 +149,10 @@
   .clk.accent .clk-chip::before{ animation:pulse 1.6s ease-in-out infinite; }
   .clk-t{ font-family:monospace; font-variant-numeric:tabular-nums; font-weight:700; font-size:14px; color:var(--cc); letter-spacing:0.02em; }
   #clkP .clk-chip{ padding:3px 10px 3px 8px; } #clkP .clk-t{ font-size:12.5px; }
+  .mob-only .box{ padding:10px 12px; } .mob-only .hint{ display:none; } .mob-only .box h3{ margin-bottom:2px; }
+  .gamet .score-tile{ min-width:78px; height:94px; } .gamet .score-tile span{ font-size:50px; }
+  .mob-only,.desk-only{ margin-top:12px; } .mob-only{ display:block; } .desk-only{ display:none; }
+  .hscroll{ overflow-x:auto; scrollbar-width:thin; } .hscroll svg{ display:block; min-width:100%; }
   .legend{ display:flex; gap:14px; font-size:12px; margin-top:6px; }
   .legend .la{ color:var(--ca); font-weight:700; } .legend .lb{ color:var(--cb); font-weight:700; }
   .hint{ font-size:12px; color:var(--text-muted); margin-top:6px; }
@@ -162,6 +166,7 @@
     .v2 > .pane{ flex:none; }
     .p-score{ grid-area:score; } .p-charts{ grid-area:charts; } .p-stats{ grid-area:stats; }
     .dots{ display:none; }
+    .mob-only{ display:none; } .desk-only{ display:block; }
     .sc{ grid-template-columns:1.2fr auto auto; align-items:center; justify-items:stretch; gap:28px; }
     .sc .gamet{ justify-content:center; } .sc .clocks{ flex-direction:column; gap:10px; }
     .clk-t{ font-size:16px; } #clkP .clk-t{ font-size:14px; }
@@ -334,15 +339,15 @@
 
   // Bieżący gem na dwóch poziomach: A u góry, B na dole; wygrany punkt przenosi linię na stronę zwycięzcy.
   function gameSvg(gp, isTb, nameA, nameB) {
-    const W = 400, H = 190, yA = 58, yB = 138, yM = 98;
+    const W = 400, H = 136, yA = 40, yB = 98, yM = 69;
     const arr = String(gp || "").split("");
     const head = '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="Przebieg bieżącego gema">' +
       '<text x="4" y="14" font-size="12" font-weight="700" fill="var(--ca)">' + esc(nameA) + "</text>" +
       '<text x="4" y="' + (H - 4) + '" font-size="12" font-weight="700" fill="var(--cb)">' + esc(nameB) + "</text>" +
       '<line x1="10" y1="' + yM + '" x2="' + (W - 10) + '" y2="' + yM + '" stroke="var(--border)" stroke-width="1.2"/>';
     if (!arr.length) return head + '<text x="' + W / 2 + '" y="' + yM + '" text-anchor="middle" dy="-8" font-size="13" fill="var(--text-muted)">Nowy gem</text></svg>';
-    const step = arr.length > 1 ? Math.min(44, (W - 50) / (arr.length - 1)) : 0;
-    const px = (i) => 28 + i * step;
+    const step = arr.length > 1 ? Math.min(44, (W - 120) / (arr.length - 1)) : 0;
+    const px = (i) => 96 + i * step;
     const py = (a) => (a === "a" ? yA : yB);
     let ca = 0, cb = 0, lines = "", dots = "";
     const labels = arr.map((c) => {
@@ -355,9 +360,35 @@
       if (i > 0) lines += '<line x1="' + px(i - 1) + '" y1="' + py(arr[i - 1]) + '" x2="' + px(i) + '" y2="' + py(c) + '" stroke="var(' + (c === "a" ? "--ca" : "--cb") + ')" stroke-width="3.5" stroke-linecap="round"/>';
       const col = c === "a" ? "--ca" : "--cb";
       dots += '<circle cx="' + px(i) + '" cy="' + py(c) + '" r="' + (i === arr.length - 1 ? 6 : 4.5) + '" fill="' + (i === arr.length - 1 ? "var(" + col + ")" : "var(--bgcolor)") + '" stroke="var(' + col + ')" stroke-width="2"/>' +
-        '<text x="' + px(i) + '" y="' + (c === "a" ? yA - 12 : yB + 22) + '" text-anchor="middle" font-size="' + (arr.length > 12 ? 11 : 13) + '" fill="var(--text)">' + labels[i] + "</text>";
+        '<text x="' + px(i) + '" y="' + (c === "a" ? yA - 11 : yB + 20) + '" text-anchor="middle" font-size="' + (arr.length > 12 ? 11 : 13) + '" fill="var(--text)">' + labels[i] + "</text>";
     });
     return head + lines + dots + "</svg>";
+  }
+
+  // Cały set w jednej linii, dwa poziomy (A u góry, B na dole), gemy rozdzielone pionowymi kreskami.
+  // Szerokość rośnie z liczbą punktów; wykres przewija się w bok i stoi na ostatnich punktach.
+  function setSvg(sp) {
+    const games = String(sp || "").split("|").filter((g) => g.length);
+    const n = games.reduce((a, g) => a + g.length, 0);
+    if (n < 2) return '<div class="hint">Wykres pojawi się po kilku punktach seta.</div>';
+    const step = 15, padL = 14, H = 108, yA = 38, yB = 82, yM = 60;
+    const W = Math.max(300, padL * 2 + n * step);
+    let idx = 0, grid = "", lines = "", dots = "", prev = null;
+    games.forEach((g, gi) => {
+      const x0 = padL + idx * step;
+      grid += '<text x="' + (x0 + (g.length * step) / 2 - step / 2) + '" y="14" text-anchor="middle" font-size="11" fill="var(--text-muted)">' + (gi + 1) + "</text>";
+      if (gi) grid += '<line x1="' + (x0 - step / 2) + '" y1="22" x2="' + (x0 - step / 2) + '" y2="' + (H - 8) + '" stroke="var(--border)"/>';
+      g.split("").forEach((c, k) => {
+        const x = padL + (idx + k) * step, y = c === "a" ? yA : yB, col = c === "a" ? "var(--ca)" : "var(--cb)";
+        if (prev) lines += '<line x1="' + prev.x + '" y1="' + prev.y + '" x2="' + x + '" y2="' + y + '" stroke="' + col + '" stroke-width="3" stroke-linecap="round"/>';
+        const last = k === g.length - 1 && gi < games.length - 1;
+        dots += '<circle cx="' + x + '" cy="' + y + '" r="' + (last ? 5 : 3) + '" fill="' + (last ? col : "var(--bgcolor)") + '" stroke="' + col + '" stroke-width="2"/>';
+        prev = { x, y };
+      });
+      idx += g.length;
+    });
+    return '<div class="hscroll"><svg viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Punkty w secie">' +
+      '<line x1="' + padL / 2 + '" y1="' + yM + '" x2="' + (W - padL / 2) + '" y2="' + yM + '" stroke="var(--border)"/>' + grid + lines + dots + "</svg></div>";
   }
 
   function statRow2(label, a, b, aText, bText) {
@@ -405,6 +436,8 @@
       (hasStats ? STAT_LABELS.map(([key, label]) => statRow2(label, data.st1[key] ?? 0, data.st2[key] ?? 0)).join("") : "");
 
     const flow = flowSvg2(data.fl);
+    const gameBox = '<div class="box"><h3>Punkty w gemie</h3>' + gameSvg(data.gp, data.tb, t1, t2) + '<div class="hint">Wygrany punkt przenosi linię na stronę zawodnika. Płaski odcinek to seria punktów.</div></div>';
+    const setBox = '<div class="box"><h3>Punkty w secie</h3><div class="legend" style="margin:0 0 4px"><span class="la">▲ ' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">▼ ' + esc(t2) + "</span></div>" + setSvg(data.sp) + '<div class="hint">Każdy punkt to kropka, kreski dzielą gemy (numer u góry). Przesuń w bok, żeby zobaczyć cały set.</div></div>';
     content.innerHTML =
       '<div class="v2top"><div>' + (isPaused ? '<div class="live-badge paused" style="margin:0">⏸ PAUZA</div>' : winner ? '<div class="pro-badge" style="margin:0">KONIEC</div>' : '<div class="live-badge" style="margin:0">🔴 NA ŻYWO</div>') +
       '</div><div class="meta">' + meta.join(" &nbsp;·&nbsp; ") + "</div></div>" +
@@ -414,13 +447,13 @@
       '<div class="prow a"><span class="bar-s"></span><span class="nm">' + (winner === "team1" ? "🏆 " : "") + esc(t1) + ball("team1") + '</span><span class="ss">' + setCells(0) + "</span></div>" +
       '<div class="prow b"><span class="bar-s"></span><span class="nm">' + (winner === "team2" ? "🏆 " : "") + esc(t2) + ball("team2") + '</span><span class="ss">' + setCells(1) + "</span></div></div>" +
       (hasGame ? '<div class="gamet"><div class="ta">' + tile("", data.gameA, "team1") + '</div><span class="colon" style="color:var(--text-muted);font-size:22px;font-weight:800">:</span><div class="tb">' + tile("", data.gameB, "team2") + "</div></div>" : "") +
-      clocks + "</div></div></section>" +
+      clocks + '</div></div><div class="mob-only">' + gameBox + setBox + "</div></section>" +
       '<section class="pane p-stats"><div class="box"><h3>Statystyki</h3>' +
       '<div class="legend"><span class="la">' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">' + esc(t2) + "</span></div>" +
       (rows || '<div class="hint">Statystyki pojawią się po pierwszych punktach.</div>') + "</div></section>" +
       '<section class="pane p-charts">' +
       (flow ? '<div class="box"><h3>Przebieg meczu</h3>' + flow + '<div class="legend"><span class="la">▲ ' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">▼ ' + esc(t2) + "</span></div></div>" : "") +
-      '<div class="box"><h3>Bieżący gem</h3>' + gameSvg(data.gp, data.tb, t1, t2) + '<div class="hint">Wygrany punkt przenosi linię na stronę zawodnika. Płaski odcinek to seria punktów.</div></div></section>' +
+      '<div class="desk-only">' + gameBox + setBox + "</div></section>" +
       "</div>" +
       '<div class="dots" id="dots"><i class="on"></i><i></i><i></i></div>' +
       '<div class="footer">' + (isPaused ? "Przerwa w meczu, gra wróci za chwilę" : "Wynik " + (winner ? "zapisany" : "na żywo") + " w aplikacji Tennis Tracker") + "</div>";
@@ -433,6 +466,7 @@
         dots.querySelectorAll("i").forEach((d, k) => d.classList.toggle("on", k === i));
       }, { passive: true });
     }
+    document.querySelectorAll(".hscroll").forEach((e) => { e.scrollLeft = e.scrollWidth; });
     tickClocks();
     if (!LIVE.timer) LIVE.timer = setInterval(tickClocks, 1000);
   }
