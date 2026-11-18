@@ -36,3 +36,20 @@ describe("buildLiveExtras punkty seta", () => {
     expect(buildLiveExtras(m, sc, 10000).sp).toBe("aaaa|ba");
   });
 });
+
+import { liveStatus } from "../src/matchtracker/liveExtras.js";
+describe("liveStatus", () => {
+  const run = (w, extra) => { const m = mk(w, extra); return liveStatus(m, computeScore(rules, m.pointLog, "team1", m.startedAt)); };
+  it("równowaga i przewaga", () => {
+    const d = ["team1", "team2", "team1", "team2", "team1", "team2"];
+    expect(run(d).k).toBe("deuce");
+    expect(run([...d, "team1"]).k).toBe("advantage");
+  });
+  it("break point: returner o krok od gema", () => {
+    // team1 serwuje, team2 prowadzi 0:40
+    expect(run(["team2", "team2", "team2"]).k).toBe("breakpoint");
+  });
+  it("bez napisu na początku gema", () => {
+    expect(run([])).toBeNull();
+  });
+});

@@ -133,8 +133,8 @@ function DepthPickerModal({ onPick, onClose }) {
     }} onClick={onClose}>
       <div role="dialog" aria-label={tr("setup.pickDepthTitle")} style={{
         background: t.bg, border: `1px solid ${t.glassLine}`, borderRadius: `${t.rLg}px ${t.rLg}px 0 0`,
-        maxWidth: 480, width: "100%", maxHeight: "86vh", overflowY: "auto",
-        padding: "10px 16px calc(20px + env(safe-area-inset-bottom, 0px))", boxShadow: t.elevFloat,
+        maxWidth: 480, width: "100%", maxHeight: "calc(var(--app-h) - var(--sat) - 16px)", overflowY: "auto",
+        padding: "10px 16px calc(20px + var(--sab))", boxShadow: t.elevFloat,
       }} onClick={(e) => e.stopPropagation()}>
         <div aria-hidden="true" style={{ width: 42, height: 5, borderRadius: 3, background: t.borderStrong, margin: "0 auto 14px" }} />
         <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>{tr("setup.pickDepthTitle")}</div>
@@ -394,7 +394,7 @@ export default function MatchSetupPage({ mode, noAutofill, onCancel, onCreated, 
           </>
         )}
       </ScrollBody>
-      <div style={{ padding: "12px 16px calc(14px + env(safe-area-inset-bottom, 0px))", flexShrink: 0 }}>
+      <div style={{ padding: "12px 16px calc(14px + var(--sab))", flexShrink: 0 }}>
         <button style={styles.primaryBtn} onClick={() => (isManual ? handleSaveManual() : setShowDepthModal(true))}>
           {isManual ? tr("setup.titleManual") : tr("setup.startTracking")}
         </button>

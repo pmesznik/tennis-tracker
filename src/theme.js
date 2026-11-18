@@ -230,7 +230,7 @@ export function makeStyles(t) {
       fontFamily: t.fontUi,
       fontSize: 15, lineHeight: 1.4,
       background: "transparent",
-      minHeight: "100vh",
+      minHeight: "var(--app-h)",
       color: t.text,
       maxWidth: 480,
       margin: "0 auto",
@@ -238,7 +238,7 @@ export function makeStyles(t) {
     },
     nav: {
       position: "sticky", top: 0, zIndex: 100,
-      padding: "calc(10px + env(safe-area-inset-top, 0px)) 14px 8px",
+      padding: "calc(10px + var(--sat)) 14px 8px",
       display: "flex", alignItems: "center", justifyContent: "space-between",
       gap: 10,
     },
@@ -247,7 +247,7 @@ export function makeStyles(t) {
       fontSize: 17, fontWeight: 700, letterSpacing: "0.01em", color: t.text,
       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
     },
-    page: { padding: "8px 16px calc(24px + env(safe-area-inset-bottom, 0px))" },
+    page: { padding: "8px 16px calc(24px + var(--sab))" },
     card: {
       background: t.surface,
       border: `1px solid ${t.glassLine}`,

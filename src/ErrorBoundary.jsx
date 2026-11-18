@@ -20,7 +20,7 @@ export default class ErrorBoundary extends Component {
     const lang = getStoredLang() || "pl";
     return (
       <div role="alert" style={{
-        minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        minHeight: "var(--app-h)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         gap: 14, padding: 24, textAlign: "center", background: "#0b1020", color: "#f2f4ff", fontFamily: "system-ui, sans-serif",
       }}>
         <div style={{ fontSize: 20, fontWeight: 700 }}>{translate(lang, "error.title")}</div>

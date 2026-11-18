@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
 import { getProfile, shouldSwapSides } from "./profile.js";
-import { TopBar, FullScreen, BigButton, Chip, TennisBall, ClockChip, ShareIcon, Icon } from "./ui.jsx";
+import { TopBar, FullScreen, BigButton, Chip, TennisBall, ClockChip, ShareIcon, Icon, useViewportH } from "./ui.jsx";
 import ScoreBoard from "./scoreboard.jsx";
 import * as storage from "./storage.js";
 import { computeScore, formatSetsString, buildSetRow, teamLabel, otherTeam, currentServerPlayerName, TEAM1, TEAM2 } from "./scoringEngine.js";
@@ -39,6 +39,8 @@ function buildLivePayload(match, score) {
 export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfaceChange }) {
   const { t, scoreStyle } = useThemeCtx();
   const { t: tr } = useLang();
+  const vh = useViewportH();
+  const compact = vh < 700; // niski ekran: zagęszczamy nagłówek, żeby przyciski punktów się mieściły
   const [match, setMatch] = useState(() => storage.getMatch(matchId));
   const [stage, setStage] = useState(INITIAL_STAGE);
   const [now, setNow] = useState(() => Date.now());
@@ -259,7 +261,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
           {tr("tracker.whoServes")}
         </div>
         {match.isDoubles ? (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, paddingBottom: "var(--sab)" }}>
             <div style={{ flex: 1, display: "flex", gap: 2 }}>
               {(match.team1.names || []).map((nm) => (
                 <button key={nm} onClick={() => handleSelectServer(TEAM1, nm)} style={{
@@ -278,7 +280,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
             </div>
           </div>
         ) : (
-          <div style={{ flex: 1, display: "flex", flexDirection: swapSides ? "row-reverse" : "row", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: swapSides ? "row-reverse" : "row", gap: 2, paddingBottom: "var(--sab)" }}>
             <button onClick={() => handleSelectServer(TEAM1)} style={{
               flex: 1, background: t.bigA.bg, color: t.bigA.fg, border: "none",
               fontSize: 18, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
@@ -314,7 +316,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <div style={{ padding: 16, textAlign: "center", fontSize: 15, fontWeight: 700, color: t.textSub }}>
           {tr("tracker.whoServesOtherTeam", { team: teamName })}
         </div>
-        <div style={{ flex: 1, display: "flex", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <div style={{ flex: 1, display: "flex", gap: 2, paddingBottom: "var(--sab)" }}>
           {names.map((nm, i) => (
             <button key={nm} onClick={() => handlePickOtherTeamServer(team, nm)} style={{
               flex: 1, background: i === 0 ? t.bigA.bg : t.bigB.bg, color: i === 0 ? t.bigA.fg : t.bigB.fg, border: "none",
@@ -341,7 +343,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <div style={{ padding: 16, textAlign: "center", fontSize: 15, fontWeight: 700, color: t.textSub }}>
           {tr("tracker.whoServesSet", { n: setIdxNow + 1, team: teamName })}
         </div>
-        <div style={{ flex: 1, display: "flex", gap: 2, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <div style={{ flex: 1, display: "flex", gap: 2, paddingBottom: "var(--sab)" }}>
           {names.map((nm, i) => (
             <button key={nm} onClick={() => handlePickSetServer(setIdxNow, team, nm)} style={{
               flex: 1, background: i === 0 ? t.bigA.bg : t.bigB.bg, color: i === 0 ? t.bigA.fg : t.bigB.fg, border: "none",
@@ -378,14 +380,14 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     ? (score.game.a === "Ad" || score.game.b === "Ad" ? "advantage" : score.game.deuce ? "deuce" : null)
     : null;
   const Header = (
-    <div style={{ background: "transparent", flexShrink: 0, padding: "12px 16px 14px" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+    <div style={{ background: "transparent", flexShrink: 0, padding: compact ? "4px 16px 6px" : "12px 16px 14px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: compact ? 5 : 8, marginBottom: compact ? 6 : 12 }}>
         {[
           { team: TEAM1, name: name1 },
           { team: TEAM2, name: name2 },
         ].map(({ team, name }, rowIdx) => (
           <div key={team} style={{
-            display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", minHeight: 52,
+            display: "flex", alignItems: "center", gap: 8, padding: compact ? "5px 14px" : "10px 14px", minHeight: compact ? 40 : 52,
             background: (score.pointServer ?? score.server) === team && !score.matchWinner ? t.tonal : t.surface,
             border: `1px solid ${(score.pointServer ?? score.server) === team && !score.matchWinner ? `${t.accent}66` : t.glassLine}`,
             borderRadius: t.rMd,
@@ -504,7 +506,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
         <TopBar title={`${name1} vs. ${name2}`} onBack={onBack} right={<>{matchClock}{namesButton}</>} />
         {Header}
         {TopRow}
-        <div style={{ flex: 1, minHeight: 0, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "row", gap: 12, ...pausedStyle }}>
+        <div style={{ flex: 1, minHeight: 0, padding: "8px 16px calc(16px + var(--sab))", display: "flex", flexDirection: "row", gap: 12, ...pausedStyle }}>
           {(swapSides ? [TEAM2, TEAM1] : [TEAM1, TEAM2]).map((tm) => (
             <BigButton key={tm} label={tr("tracker.pointFor", { name: tm === TEAM1 ? name1 : name2 })}
               color={tm === TEAM1 ? t.bigA.bg : t.bigB.bg} textColor={tm === TEAM1 ? t.bigA.fg : t.bigB.fg}
@@ -552,7 +554,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
   let body;
   if (stage.name === "serve1") {
     body = (
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: "8px 16px calc(16px + var(--sab))" }}>
         <div style={{ flex: 1, display: "flex", gap: 12 }}>
           <BigButton label={tr("tracker.ace")} onClick={() => handleAce("1st")} color={t.success} style={{ flex: 1, minHeight: 0, height: "100%" }} />
           <BigButton label={tr("tracker.serveFault")} onClick={handleFault1} color="#7a7fb0" style={{ flex: 1, minHeight: 0, height: "100%" }} />
@@ -562,7 +564,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     );
   } else if (stage.name === "serve2") {
     body = (
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: "8px 16px calc(16px + var(--sab))" }}>
         <div style={{ flex: 1, display: "flex", gap: 12 }}>
           <BigButton label={tr("tracker.returnWinner")} onClick={() => handleReturnWinner("2nd")} color={t.secondarySoft} style={{ flex: 1, minHeight: 0, height: "100%" }} />
           <BigButton label={tr("tracker.ace")} onClick={() => handleAce("2nd")} color={t.success} style={{ flex: 1, minHeight: 0, height: "100%" }} />
@@ -576,11 +578,11 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
     );
   } else if (stage.name === "rally") {
     body = (
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "clamp(6px, 2dvh, 16px)", padding: "clamp(8px, 2dvh, 24px) 24px calc(clamp(8px, 2dvh, 24px) + var(--sab))" }}>
         <div style={{ fontSize: 13, color: t.textSub }}>{tr("tracker.rallyCountLabel")}</div>
-        <div style={{ fontSize: 64, fontWeight: 800, color: t.accent }}>{stage.rallyCount}</div>
+        <div style={{ fontSize: "clamp(40px, 8dvh, 64px)", lineHeight: 1.1, fontWeight: 800, color: t.accent }}>{stage.rallyCount}</div>
         <button onClick={() => setStage((s) => ({ ...s, rallyCount: s.rallyCount + 1 }))} style={{
-          width: 120, height: 120, borderRadius: "50%", border: "none",
+          width: "clamp(80px, 16dvh, 120px)", height: "clamp(80px, 16dvh, 120px)", borderRadius: "50%", border: "none",
           background: t.secondary, color: "#fff", fontSize: 28, fontWeight: 800, cursor: "pointer", flexShrink: 0,
         }}>+1</button>
         <button onClick={() => setStage((s) => ({ ...s, name: "point-end" }))} style={{
@@ -597,7 +599,7 @@ export default function MatchTrackerPage({ matchId, onBack, onFinished, onSurfac
       { key: "unforcedError", label: tr("tracker.unforcedError"), color: t.danger },
     ];
     body = (
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 10, padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: compact ? 6 : 10, padding: "8px 16px calc(16px + var(--sab))", overflowY: "auto" }}>
         {isAdvanced && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
             <div style={{ display: "flex", gap: 8 }}>

@@ -153,6 +153,19 @@
   .gamet .score-tile{ min-width:78px; height:94px; } .gamet .score-tile span{ font-size:50px; }
   .mob-only,.desk-only{ margin-top:12px; } .mob-only{ display:block; } .desk-only{ display:none; }
   .hscroll{ overflow-x:auto; scrollbar-width:thin; } .hscroll svg{ display:block; min-width:100%; }
+  .sc-right{ display:flex; flex-direction:column; align-items:center; gap:12px; min-width:0; }
+  .stl{ font-size:17px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-sub); text-align:center; min-height:20px; line-height:1.25; }
+  .stl.k-matchpoint{ color:#ef4444; font-size:21px; animation:pulse 1.1s ease-in-out infinite; }
+  .stl.k-setpoint{ color:#f59e0b; font-size:19px; }
+  .stl.k-breakpoint{ color:#fb923c; }
+  .stl.k-advantage{ color:#38bdf8; }
+  .stl.k-deuce{ color:var(--text); }
+  .stl.k-tiebreak{ color:#a78bfa; }
+  .stl.k-changeover{ color:var(--text-muted); }
+  .stl.k-paused{ color:#ef4444; }
+  .stl.k-won{ color:var(--accent); font-size:22px; }
+  .stl.k-won small{ display:block; font-size:12px; letter-spacing:0.18em; color:var(--text-muted); margin-bottom:3px; }
+  .sc.redball svg g{ fill:#ef4444; }
   .legend{ display:flex; gap:14px; font-size:12px; margin-top:6px; }
   .legend .la{ color:var(--ca); font-weight:700; } .legend .lb{ color:var(--cb); font-weight:700; }
   .hint{ font-size:12px; color:var(--text-muted); margin-top:6px; }
@@ -162,13 +175,16 @@
   .sbar{ display:flex; height:5px; border-radius:3px; overflow:hidden; gap:2px; margin:4px 0 2px; }
   @media (min-width:900px){
     .card.wide{ max-width:1100px; padding:26px 28px; }
-    .v2{ display:grid; grid-template-columns:1.35fr 1fr; grid-template-areas:"score score" "charts stats"; overflow:visible; align-items:stretch; gap:16px; }
+    .v2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,0.9fr); grid-template-areas:"score score score" "flow flow stats" "game set stats"; overflow:visible; align-items:stretch; gap:16px; }
     .v2 > .pane{ flex:none; }
-    .p-score{ grid-area:score; } .p-charts{ grid-area:charts; } .p-stats{ grid-area:stats; }
+    .p-score{ grid-area:score; } .p-stats{ grid-area:stats; } .p-charts, .desk-only{ display:contents; }
+    .b-flow{ grid-area:flow; } .b-game{ grid-area:game; } .b-set{ grid-area:set; }
+    .v2 .box{ margin:0; }
     .dots{ display:none; }
-    .mob-only{ display:none; } .desk-only{ display:block; }
-    .sc{ grid-template-columns:1.2fr auto auto; align-items:center; justify-items:stretch; gap:28px; }
-    .sc .gamet{ justify-content:center; } .sc .clocks{ flex-direction:column; gap:10px; }
+    .mob-only{ display:none; }
+    .sc{ grid-template-columns:1fr auto 1fr; align-items:center; justify-items:stretch; gap:28px; }
+    .sc .gamet{ justify-content:center; } .sc-right{ flex-direction:row; align-items:center; justify-content:space-between; gap:16px; }
+    .sc-right .stl{ flex:1; text-align:center; } .sc .clocks{ flex-direction:column; align-items:flex-end; gap:10px; flex:0 0 auto; }
     .clk-t{ font-size:16px; } #clkP .clk-t{ font-size:14px; }
   }
 </style>
@@ -400,6 +416,18 @@
       '"></div><div style="width:' + (100 - pa) + '%;background:var(--cb);opacity:' + op + '"></div></div></div>';
   }
 
+  const STATUS_TXT = { matchpoint: "PIŁKA MECZOWA", setpoint: "PIŁKA SETOWA", breakpoint: "BREAK POINT", tiebreak: "TIE-BREAK", deuce: "RÓWNOWAGA", changeover: "ZMIANA STRON" };
+  function statusText(data, t1, t2) {
+    if (data.paused) return ["paused", "PRZERWA"];
+    const k = data.ss;
+    if (!k) return ["", ""];
+    if (k === "advantage") {
+      const nm = String(data.sw === "team2" ? t2 : t1).split(" ")[0];
+      return [k, "PRZEWAGA " + nm];
+    }
+    return [k, STATUS_TXT[k] || ""];
+  }
+
   function renderLive2(data) {
     const card = $id("card");
     card.classList.add("wide");
@@ -425,6 +453,11 @@
       ? '<div class="clocks"><div class="clk accent" id="clkM"><span class="clk-l">MECZ</span><span class="clk-chip"><span class="clk-t"></span></span></div>' +
         (data.ps != null ? '<div class="clk muted" id="clkP"><span class="clk-l">PUNKT</span><span class="clk-chip"><span class="clk-t"></span></span></div>' : "") + "</div>"
       : "";
+    const [stKey, stTxt] = statusText(data, t1, t2);
+    const status = winner
+      ? '<div class="stl k-won" id="stl"><small>ZWYCIĘZCA:</small>' + esc(winner === "team1" ? t1 : t2) + "</div>"
+      : '<div class="stl k-' + stKey + '" id="stl">' + esc(stTxt) + "</div>";
+    const redBall = isPaused || (!winner && data.ss === "changeover");
     const meta = [];
     if (data.d) meta.push(esc(data.d));
     if (surface) meta.push('<span class="dot"></span>' + esc(surface));
@@ -436,23 +469,23 @@
       (hasStats ? STAT_LABELS.map(([key, label]) => statRow2(label, data.st1[key] ?? 0, data.st2[key] ?? 0)).join("") : "");
 
     const flow = flowSvg2(data.fl);
-    const gameBox = '<div class="box"><h3>Punkty w gemie</h3>' + gameSvg(data.gp, data.tb, t1, t2) + '<div class="hint">Wygrany punkt przenosi linię na stronę zawodnika. Płaski odcinek to seria punktów.</div></div>';
-    const setBox = '<div class="box"><h3>Punkty w secie</h3><div class="legend" style="margin:0 0 4px"><span class="la">▲ ' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">▼ ' + esc(t2) + "</span></div>" + setSvg(data.sp) + '<div class="hint">Każdy punkt to kropka, kreski dzielą gemy (numer u góry). Przesuń w bok, żeby zobaczyć cały set.</div></div>';
+    const gameBox = '<div class="box b-game"><h3>Punkty w gemie</h3>' + gameSvg(data.gp, data.tb, t1, t2) + '<div class="hint">Wygrany punkt przenosi linię na stronę zawodnika. Płaski odcinek to seria punktów.</div></div>';
+    const setBox = '<div class="box b-set"><h3>Punkty w secie</h3><div class="legend" style="margin:0 0 4px"><span class="la">▲ ' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">▼ ' + esc(t2) + "</span></div>" + setSvg(data.sp) + '<div class="hint">Każdy punkt to kropka, kreski dzielą gemy (numer u góry). Przesuń w bok, żeby zobaczyć cały set.</div></div>';
     content.innerHTML =
       '<div class="v2top"><div>' + (isPaused ? '<div class="live-badge paused" style="margin:0">⏸ PAUZA</div>' : winner ? '<div class="pro-badge" style="margin:0">KONIEC</div>' : '<div class="live-badge" style="margin:0">🔴 NA ŻYWO</div>') +
       '</div><div class="meta">' + meta.join(" &nbsp;·&nbsp; ") + "</div></div>" +
       '<div class="v2" id="v2">' +
-      '<section class="pane p-score"><div class="box"><div class="sc">' +
+      '<section class="pane p-score"><div class="box"><div class="sc' + (redBall ? ' redball' : '') + '">' +
       '<div class="sc-names">' +
       '<div class="prow a"><span class="bar-s"></span><span class="nm">' + (winner === "team1" ? "🏆 " : "") + esc(t1) + ball("team1") + '</span><span class="ss">' + setCells(0) + "</span></div>" +
       '<div class="prow b"><span class="bar-s"></span><span class="nm">' + (winner === "team2" ? "🏆 " : "") + esc(t2) + ball("team2") + '</span><span class="ss">' + setCells(1) + "</span></div></div>" +
       (hasGame ? '<div class="gamet"><div class="ta">' + tile("", data.gameA, "team1") + '</div><span class="colon" style="color:var(--text-muted);font-size:22px;font-weight:800">:</span><div class="tb">' + tile("", data.gameB, "team2") + "</div></div>" : "") +
-      clocks + '</div></div><div class="mob-only">' + gameBox + setBox + "</div></section>" +
+      '<div class="sc-right">' + status + clocks + '</div>' + '</div></div><div class="mob-only">' + gameBox + setBox + "</div></section>" +
       '<section class="pane p-stats"><div class="box"><h3>Statystyki</h3>' +
       '<div class="legend"><span class="la">' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">' + esc(t2) + "</span></div>" +
       (rows || '<div class="hint">Statystyki pojawią się po pierwszych punktach.</div>') + "</div></section>" +
       '<section class="pane p-charts">' +
-      (flow ? '<div class="box"><h3>Przebieg meczu</h3>' + flow + '<div class="legend"><span class="la">▲ ' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">▼ ' + esc(t2) + "</span></div></div>" : "") +
+      (flow ? '<div class="box b-flow"><h3>Przebieg meczu</h3>' + flow + '<div class="legend"><span class="la">▲ ' + esc(t1) + '</span><span style="flex:1"></span><span class="lb">▼ ' + esc(t2) + "</span></div></div>" : "") +
       '<div class="desk-only">' + gameBox + setBox + "</div></section>" +
       "</div>" +
       '<div class="dots" id="dots"><i class="on"></i><i></i><i></i></div>' +

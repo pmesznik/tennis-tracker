@@ -3,6 +3,7 @@
 // ui.jsx — małe, współdzielone komponenty wizualne używane na kilku ekranach
 // trackera (duże przyciski akcji, karta, pasek górny).
 // ─────────────────────────────────────────────────────────────────────────────
+import { useState, useEffect } from "react";
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
 import { formatDuration } from "./time.js";
@@ -105,6 +106,18 @@ export function Icon({ name, size = 20 }) {
   );
 }
 
+// Wysokość widocznego okna (zmienia się przy obrocie i klawiaturze) — do zagęszczania
+// układu na niskich ekranach, żeby ważne rzeczy mieściły się bez przewijania.
+export function useViewportH() {
+  const [h, setH] = useState(() => (typeof window === "undefined" ? 800 : window.innerHeight));
+  useEffect(() => {
+    const on = () => setH(window.innerHeight);
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  return h;
+}
+
 export function TopBar({ title, onBack, right }) {
   const { t } = useThemeCtx();
   const { t: tr } = useLang();
@@ -112,7 +125,7 @@ export function TopBar({ title, onBack, right }) {
     <div style={{
       flexShrink: 0, background: t.glass, WebkitBackdropFilter: "blur(18px) saturate(1.5)", backdropFilter: "blur(18px) saturate(1.5)",
       borderBottom: `1px solid ${t.glassLine}`, padding: "8px 12px",
-      paddingTop: "calc(8px + env(safe-area-inset-top, 0px))",
+      paddingTop: "calc(8px + var(--sat))",
       display: "flex", alignItems: "center", gap: 10, minHeight: 56,
     }}>
       {onBack && (
@@ -154,7 +167,7 @@ export function ScrollBody({ children, style }) {
       flex: 1, minHeight: 0, overflowY: "auto",
       ...(padding != null ? { padding } : {}),
       ...rest,
-      paddingBottom: `calc(${bottom}px + env(safe-area-inset-bottom, 0px))`,
+      paddingBottom: `calc(${bottom}px + var(--sab))`,
     }}>
       {children}
     </div>

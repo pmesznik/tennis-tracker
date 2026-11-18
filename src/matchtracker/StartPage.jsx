@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { pushBack } from "../backStack.js";
 import { useThemeCtx } from "../theme.js";
 import { useLang } from "../i18n.js";
-import { Icon } from "./ui.jsx";
+import { Icon, useViewportH } from "./ui.jsx";
 import * as storage from "./storage.js";
 import { teamLabel } from "./scoringEngine.js";
 import { getProfile, saveProfile, firstName } from "./profile.js";
@@ -28,6 +28,7 @@ function Seg({ t, options, value, onChange, label }) {
 export default function StartPage({ onNewMatch, onHistory, onStats, onMyStats, onOthers, onOpenMatch }) {
   const { t, styles } = useThemeCtx();
   const { t: tr } = useLang();
+  const vh = useViewportH();
   const [profile, setProfile] = useState(() => getProfile());
   const [configOpen, setConfigOpen] = useState(() => !getProfile().done);
   const [draft, setDraft] = useState(profile);
@@ -39,9 +40,9 @@ export default function StartPage({ onNewMatch, onHistory, onStats, onMyStats, o
     return pushBack(() => { setDraft(profile); setConfigOpen(false); });
   }, [configOpen, profile]);
 
-  const header = (
-    <div style={{ textAlign: "center", padding: "28px 0 18px" }}>
-      <img src={appIcon} width={88} height={88} alt="" style={{ borderRadius: 24, boxShadow: t.elevFloat }} />
+  const header = vh < 600 ? <div style={{ height: 8 }} /> : (
+    <div style={{ textAlign: "center", padding: "clamp(6px, 3.5dvh, 28px) 0 clamp(6px, 2dvh, 18px)" }}>
+      <img src={appIcon} alt="" style={{ width: "clamp(52px, 12dvh, 88px)", height: "clamp(52px, 12dvh, 88px)", borderRadius: 24, boxShadow: t.elevFloat }} />
     </div>
   );
 
@@ -81,9 +82,9 @@ export default function StartPage({ onNewMatch, onHistory, onStats, onMyStats, o
       <div style={{ fontSize: 24, fontWeight: 750, textAlign: "center", marginBottom: 4 }}>
         {fn ? tr("start.hello", { name: fn }) : tr("start.helloNoName")}
       </div>
-      <div style={{ height: 18 }} />
+      <div style={{ height: "clamp(6px, 2dvh, 18px)" }} />
       <button style={styles.primaryBtn} onClick={onNewMatch}><Icon name="add" size={22} />{tr("list.newMatch")}</button>
-      <div style={{ display: "flex", gap: 10, margin: "10px 0 16px" }}>
+      <div style={{ display: "flex", gap: 10, margin: "10px 0 clamp(8px, 2dvh, 16px)" }}>
         <button style={styles.secondaryBtn} onClick={onHistory}><Icon name="calendar" size={19} />{tr("start.history")}</button>
         <button style={styles.secondaryBtn} onClick={() => (profile.name ? onMyStats(profile.name) : onStats())}>
           <Icon name="stats" size={19} />{tr("start.myStats")}
@@ -92,7 +93,7 @@ export default function StartPage({ onNewMatch, onHistory, onStats, onMyStats, o
       {last && (
         <button onClick={() => onOpenMatch(last)} style={{
           display: "block", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", color: t.text,
-          background: t.surface, border: `1px solid ${t.glassLine}`, borderRadius: t.rMd, padding: "12px 14px", marginBottom: 16,
+          background: t.surface, border: `1px solid ${t.glassLine}`, borderRadius: t.rMd, padding: "12px 14px", marginBottom: "clamp(8px, 2dvh, 16px)",
         }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: t.textSub, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             {tr(last.status === "in_progress" ? "start.resume" : "start.lastMatch")}
@@ -102,7 +103,7 @@ export default function StartPage({ onNewMatch, onHistory, onStats, onMyStats, o
         </button>
       )}
       <div style={{ background: t.tonal, borderRadius: t.rMd, padding: "12px 14px", fontSize: 13, color: t.textSub, lineHeight: 1.5 }}>
-        <div style={{ marginBottom: 10 }}>{tr("start.reminder")}</div>
+        {vh >= 700 && <div style={{ marginBottom: 10 }}>{tr("start.reminder")}</div>}
         <div style={{ display: "flex", gap: 8 }}>
           <button style={{ ...styles.secondaryBtn, fontSize: 13 }} onClick={() => { setDraft(profile); setConfigOpen(true); }}>
             <Icon name="edit" size={17} />{tr("start.changeSettings")}

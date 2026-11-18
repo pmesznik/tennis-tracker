@@ -35,7 +35,7 @@ export default function TeamTieSetupPage({ onBack, onCreated }) {
         />
         <div style={{ fontSize: 12, color: t.textSub, marginTop: 16, lineHeight: 1.5 }}>{tr("tie.setupHint")}</div>
       </ScrollBody>
-      <div style={{ padding: "12px 16px calc(14px + env(safe-area-inset-bottom, 0px))", flexShrink: 0 }}>
+      <div style={{ padding: "12px 16px calc(14px + var(--sab))", flexShrink: 0 }}>
         <button style={styles.primaryBtn} onClick={handleCreate}>{tr("tie.createButton")}</button>
       </div>
     </FullScreen>

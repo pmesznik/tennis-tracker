@@ -4,7 +4,8 @@
   "webDir": "dist",
   "plugins": {
     "SystemBars": {
-      "style": "DARK"
+      "style": "DARK",
+      "initialViewportFitValueHint": "cover"
     }
   }
 }

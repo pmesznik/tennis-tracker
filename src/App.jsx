@@ -27,7 +27,7 @@ import { maybeAutoBackup } from "./cloudBackup.js";
 // da się później zmienić małą flagą w górnym pasku.
 function LanguagePickerScreen({ t, styles, onPick }) {
   return (
-    <div style={{ ...styles.app, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24, padding: 24 }}>
+    <div style={{ ...styles.app, minHeight: "var(--app-h)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24, padding: 24 }}>
       <img src={appIcon} width={96} height={96} alt="" style={{ borderRadius: 26, boxShadow: t.elevFloat }} />
       <span style={{ fontSize: 20, fontWeight: 700, color: t.text }}>Wybierz język / Choose language</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 280 }}>
@@ -73,7 +73,7 @@ function PaletteChips({ current, onPick, tr }) {
 // Pierwsze uruchomienie: karta z wyborem kolorystyki (po wyborze języka).
 function PaletteStartScreen({ t, styles, tr, onPick }) {
   return (
-    <div style={{ ...styles.app, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, padding: 24 }}>
+    <div style={{ ...styles.app, minHeight: "var(--app-h)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, padding: 24 }}>
       <img src={appIcon} width={80} height={80} alt="" style={{ borderRadius: 22, boxShadow: t.elevFloat }} />
       <div style={{
         width: "100%", maxWidth: 360, background: t.surface, border: `1px solid ${t.glassLine}`,
@@ -94,7 +94,7 @@ function PaletteSheet({ t, tr, current, onPick, onClose }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 400, background: t.overlay, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
       <div role="dialog" aria-label={tr("palette.title")} style={{
         background: t.bg, border: `1px solid ${t.glassLine}`, borderRadius: `${t.rLg}px ${t.rLg}px 0 0`,
-        maxWidth: 480, width: "100%", padding: "10px 16px calc(20px + env(safe-area-inset-bottom, 0px))", boxShadow: t.elevFloat,
+        maxWidth: 480, width: "100%", maxHeight: "calc(var(--app-h) - var(--sat) - 16px)", overflowY: "auto", padding: "10px 16px calc(20px + var(--sab))", boxShadow: t.elevFloat,
       }} onClick={(e) => e.stopPropagation()}>
         <div aria-hidden="true" style={{ width: 42, height: 5, borderRadius: 3, background: t.borderStrong, margin: "0 auto 14px" }} />
         <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 6 }}>{tr("palette.title")}</div>
@@ -112,8 +112,8 @@ function ScoreStyleSheet({ t, tr, current, onPick, onClose }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 400, background: t.overlay, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
       <div role="dialog" aria-label={tr("scoreStyle.title")} style={{
         background: t.bg, border: `1px solid ${t.glassLine}`, borderRadius: `${t.rLg}px ${t.rLg}px 0 0`,
-        maxWidth: 480, width: "100%", maxHeight: "88vh", overflowY: "auto",
-        padding: "10px 16px calc(20px + env(safe-area-inset-bottom, 0px))", boxShadow: t.elevFloat,
+        maxWidth: 480, width: "100%", maxHeight: "calc(var(--app-h) - var(--sat) - 16px)", overflowY: "auto",
+        padding: "10px 16px calc(20px + var(--sab))", boxShadow: t.elevFloat,
       }} onClick={(e) => e.stopPropagation()}>
         <div aria-hidden="true" style={{ width: 42, height: 5, borderRadius: 3, background: t.borderStrong, margin: "0 auto 14px" }} />
         <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 6 }}>{tr("scoreStyle.title")}</div>
@@ -418,7 +418,7 @@ export default function App() {
                 setView(m.status === "in_progress" ? { name: "tracker", matchId: m.id } : { name: "summary", matchId: m.id });
               }}
             />
-            <div style={{ textAlign: "center", fontSize: 12, color: t.textMuted, padding: "0 0 calc(20px + env(safe-area-inset-bottom, 0px))" }}>
+            <div style={{ textAlign: "center", fontSize: 12, color: t.textMuted, padding: "0 0 calc(20px + var(--sab))" }}>
               {APP_NAME} v{APP_VERSION}
             </div>
           </>

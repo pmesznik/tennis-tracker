@@ -105,7 +105,7 @@ export default function BackupModal({ onClose, onImported }) {
     }} onClick={onClose}>
       <div role="dialog" aria-label={tr("backup.title")} style={{
         background: t.bg, border: `1px solid ${t.glassLine}`, borderRadius: `${t.rLg}px ${t.rLg}px 0 0`,
-        maxWidth: 480, width: "100%", maxHeight: "92vh", overflowY: "auto", padding: "10px 16px calc(20px + env(safe-area-inset-bottom, 0px))",
+        maxWidth: 480, width: "100%", maxHeight: "calc(var(--app-h) - var(--sat) - 16px)", overflowY: "auto", padding: "10px 16px calc(20px + var(--sab))",
         boxShadow: t.elevFloat,
       }} onClick={(e) => e.stopPropagation()}>
         <div aria-hidden="true" style={{ width: 42, height: 5, borderRadius: 3, background: t.borderStrong, margin: "0 auto 14px" }} />
